@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function() {
+        try {
+          var origFetch = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : null;
+          var _store = origFetch;
+
+          function getF() { return _store; }
+          function setF(v) { _store = v; }
+
+          try { delete window.fetch; } catch(e1) {}
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            try { delete Window.prototype.fetch; } catch(e2) {}
+          }
+
+          Object.defineProperty(window, 'fetch', {
+            get: getF,
+            set: setF,
+            configurable: true,
+            enumerable: true
+          });
+
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            try {
+              Object.defineProperty(Window.prototype, 'fetch', {
+                get: getF,
+                set: setF,
+                configurable: true,
+                enumerable: true
+              });
+            } catch(e3) {}
+          }
+        } catch(e4) {}
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spark Studio: Секретная вывеска для кондитерской Мари</title>
+    <meta name="description" content="Интерактивная 2D-игра для детей 8–12 лет: создавай вывески, тестируй на улице, наблюдай реакцию NPC и собери портфолио." />
+    <meta property="og:title" content="Spark Studio: Секретная вывеска для кондитерской Мари" />
+    <meta property="og:description" content="Интерактивная 2D-игра для детей 8–12 лет: создавай вывески, тестируй на улице, наблюдай реакцию NPC и собери портфолио." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
