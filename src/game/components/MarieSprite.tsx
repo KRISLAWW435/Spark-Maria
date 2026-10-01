@@ -6,13 +6,13 @@ import { TransparentSprite } from './TransparentSprite';
 interface MarieSpriteProps {
   emotion: MarieEmotion;
   className?: string;
-  size?: number;
+  size?: number | string;
 }
 
 export const MarieSprite: React.FC<MarieSpriteProps> = ({
   emotion,
   className = '',
-  size = 624,
+  size = 1020,
 }) => {
   return (
     <TransparentSprite

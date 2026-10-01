@@ -85,6 +85,26 @@ class SoundEngine {
     });
   }
 
+  playNotification() {
+    this.init();
+    if (!this.ctx) return;
+    const notes = [587.33, 880]; // D5, A5 chime
+    notes.forEach((freq, i) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const startTime = this.ctx.currentTime + i * 0.12;
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      gain.gain.setValueAtTime(0.25, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.35);
+    });
+  }
+
   playLaugh() {
     this.init();
     if (!this.ctx) return;

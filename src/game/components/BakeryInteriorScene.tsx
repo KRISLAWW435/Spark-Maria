@@ -24,58 +24,26 @@ export const BakeryInteriorScene: React.FC<BakeryInteriorSceneProps> = ({ onComp
     {
       speaker: 'marie',
       speakerName: 'Мари (Владелица Кондитерской)',
-      text: 'Привет! Я Мари. У меня маленькая уютная кондитерская. Внутри тепло, на витринах — свежие эклеры. Но люди на улице почему-то проходят мимо…',
+      text: 'Привет! Спасибо, что приехали так быстро! У меня маленькая уютная кондитерская: мы с утра выпекаем нежнейшие круассаны и эклеры...',
       marieEmotion: 'worried',
       sparkEmotion: 'neutral',
       tagBg: 'bg-rose-500 text-white',
     },
     {
-      speaker: 'spark',
-      speakerName: 'Спарк (ИИ-Наставница)',
-      text: 'Потому что вывеска — это первое впечатление и главный «интерфейс» магазина! Если прохожий не замечает её за секунду, кондитерской для него не существует.',
+      speaker: 'marie',
+      speakerName: 'Мари (Владелица Кондитерской)',
+      text: 'Но на улице люди почему-то просто проходят мимо нашей двери и не заходят внутрь. Мы совсем теряем гостей!',
       marieEmotion: 'worried',
       sparkEmotion: 'thinking',
-      tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
+      tagBg: 'bg-rose-500 text-white',
     },
     {
-      speaker: 'marie',
-      speakerName: 'Мари (Владелица Кондитерской)',
-      text: 'Значит, нам нужна вывеска, которая не просто красивая, а решает конкретную задачу?',
+      speaker: 'spark',
+      speakerName: 'Спарк · Искра творчества',
+      text: 'Не переживай, Мари! Вывеска — это первое впечатление и главный интерфейс магазина. Пойдём на улицу, посмотрим, что не так!',
       marieEmotion: 'hopeful',
-      sparkEmotion: 'happy',
-      tagBg: 'bg-rose-500 text-white',
-    },
-    {
-      speaker: 'spark',
-      speakerName: 'Спарк (ИИ-Наставница)',
-      text: 'Вот именно! Вывеска решает три задачи: 1) заметность, 2) контраст и читаемость, 3) узнаваемость символов!',
-      marieEmotion: 'happy',
       sparkEmotion: 'excited',
       tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
-    },
-    {
-      speaker: 'marie',
-      speakerName: 'Мари (Владелица Кондитерской)',
-      text: 'А что, если наш дизайнер выберет необычный цвет, сделает её огромной или добавит неожиданную иконку?',
-      marieEmotion: 'surprised',
-      sparkEmotion: 'laughing',
-      tagBg: 'bg-rose-500 text-white',
-    },
-    {
-      speaker: 'spark',
-      speakerName: 'Спарк (ИИ-Наставница)',
-      text: 'В нашей лаборатории нет ошибок и двоек! Любое решение — это творческая гипотеза. Соберём вывеску, протестируем на прохожих и узнаем их реакцию!',
-      marieEmotion: 'excited',
-      sparkEmotion: 'excited',
-      tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
-    },
-    {
-      speaker: 'marie',
-      speakerName: 'Мари (Владелица Кондитерской)',
-      text: 'Звучит здорово! Пойдём на улицу и посмотрим на наше место со стороны!',
-      marieEmotion: 'proud',
-      sparkEmotion: 'happy',
-      tagBg: 'bg-rose-500 text-white',
     },
   ];
 
@@ -101,34 +69,38 @@ export const BakeryInteriorScene: React.FC<BakeryInteriorSceneProps> = ({ onComp
         />
       </div>
 
-      {/* LAYER 2: Characters - ONLY ONE CHARACTER PER SLIDE */}
+      {/* LAYER 2: Characters */}
       <div className="relative z-10 w-full h-full pointer-events-none">
-        {/* Marie: Grounded at bottom left (absolute left-[15%] bottom-[20%]), Desktop Size ~624px */}
+        {/* Marie */}
         {current.speaker === 'marie' && (
-          <div className="absolute left-[10%] md:left-[15%] bottom-[16%] md:bottom-[20%] transition-all duration-300 filter drop-shadow-2xl z-20">
-            <MarieSprite emotion={current.marieEmotion} size={624} />
+          <div className="absolute left-[0%] sm:left-[3%] md:left-[6%] translate-x-[100px] bottom-[-96px] md:bottom-[-111px] transition-all duration-300 z-20">
+            <MarieSprite emotion={current.marieEmotion} size={1020} />
           </div>
         )}
 
-        {/* Spark: Positioned on the right & lower down (absolute right-[18%] bottom-[22%] animate-float) */}
+        {/* Spark with subtle rainbow neon glow */}
         {current.speaker === 'spark' && (
-          <div className="absolute right-[12%] md:right-[18%] bottom-[18%] md:bottom-[22%] animate-float transition-all duration-300 filter drop-shadow-2xl z-20">
-            <SparkSprite emotion={current.sparkEmotion} size={440} />
+          <div className="absolute right-[16%] md:right-[24%] bottom-[12%] md:bottom-[16%] animate-float transition-all duration-300 z-20">
+            <div
+              style={{
+                filter:
+                  'drop-shadow(0 0 10px rgba(244,114,182,0.45)) drop-shadow(0 0 20px rgba(167,139,250,0.4)) drop-shadow(0 0 32px rgba(56,189,248,0.35))',
+              }}
+            >
+              <SparkSprite emotion={current.sparkEmotion} size={540} />
+            </div>
           </div>
         )}
       </div>
 
       {/* LAYER 3: Dialogue Box Overlay */}
-      <div className="absolute bottom-4 left-0 right-0 z-30 px-4">
-        <DialogueBox
-          speakerName={current.speakerName}
-          text={current.text}
-          speakerTagBg={current.tagBg}
-          onNext={handleNext}
-          isLast={step === script.length - 1}
-          nextButtonLabel={step === script.length - 1 ? 'Выйти на улицу ➔' : 'Дальше ➔'}
-        />
-      </div>
+      <DialogueBox
+        speaker={current.speaker === 'marie' ? 'Мари' : 'Спарк'}
+        text={current.text}
+        onNext={handleNext}
+        isLast={step === script.length - 1}
+        nextButtonLabel={step === script.length - 1 ? 'Пойти на улицу ➔' : 'Дальше ➔'}
+      />
     </div>
   );
 };

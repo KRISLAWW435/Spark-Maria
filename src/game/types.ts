@@ -1,5 +1,5 @@
 export type GameScene =
-  | 'world_map'
+  | 'studio'
   | 'intro_bakery'
   | 'street_observation'
   | 'brief'
@@ -8,6 +8,27 @@ export type GameScene =
   | 'test_results'
   | 'portfolio'
   | 'final_celebration';
+
+export type AvatarShape =
+  | 'circle'
+  | 'oval'
+  | 'blob_2'
+  | 'polygon'
+  | 'blob_15'
+  | 'cloud'
+  | 'summertime_sadness'
+  | 'heart_2'
+  | 'blob_11';
+
+export interface StudioData {
+  name: string;
+  avatar: string;
+  shape: AvatarShape;
+  color: string;
+  font: string;
+  isCreated: boolean;
+  decorations: string[];
+}
 
 export type MarieEmotion =
   | 'neutral'

@@ -9,10 +9,10 @@ import { Award, Coins, MapPin, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface PortfolioSceneProps {
   progress: PlayerProgress;
-  onReturnToMap: () => void;
+  onReturnToStudio: () => void;
 }
 
-export const PortfolioScene: React.FC<PortfolioSceneProps> = ({ progress, onReturnToMap }) => {
+export const PortfolioScene: React.FC<PortfolioSceneProps> = ({ progress, onReturnToStudio }) => {
   const portfolio = progress.portfolio;
 
   useEffect(() => {
@@ -32,8 +32,8 @@ export const PortfolioScene: React.FC<PortfolioSceneProps> = ({ progress, onRetu
     return (
       <div className="p-8 text-center text-amber-200">
         <p>Портфолио создается...</p>
-        <button onClick={onReturnToMap} className="mt-4 px-4 py-2 bg-amber-500 text-slate-900 font-bold rounded-xl">
-          На карту
+        <button onClick={onReturnToStudio} className="mt-4 px-4 py-2 bg-amber-500 text-slate-900 font-bold rounded-xl">
+          В студию
         </button>
       </div>
     );
@@ -158,20 +158,17 @@ export const PortfolioScene: React.FC<PortfolioSceneProps> = ({ progress, onRetu
           </div>
         </div>
 
-        {/* Return to Map Button */}
+        {/* Return to Studio Button */}
         <div className="text-center pt-2">
           <button
             onClick={() => {
               soundEngine.playSuccess();
-              onReturnToMap();
+              onReturnToStudio();
             }}
             className="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-500 text-slate-950 font-black text-base md:text-lg shadow-2xl hover:scale-105 transition-transform flex items-center gap-2 mx-auto"
           >
-            <MapPin className="w-5 h-5" /> ВЕРНУТЬСЯ НА КАРТУ РАЙОНА ➔
+            <Sparkles className="w-5 h-5" /> ВЕРНУТЬСЯ В СТУДИЮ ➔
           </button>
-          <p className="text-xs text-amber-300/80 mt-2">
-            ✨ Открылась новая локация: <span className="font-bold text-amber-200">«Студия иллюстрации»</span>!
-          </p>
         </div>
       </div>
     </div>

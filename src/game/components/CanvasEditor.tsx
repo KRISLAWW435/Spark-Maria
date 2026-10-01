@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Sparkles,
   Check,
+  CheckCircle2,
   Edit3,
   Rocket,
   Undo2,
@@ -17,25 +18,30 @@ import {
   Type,
   Palette,
   Square,
+  Eye,
+  Sliders,
 } from 'lucide-react';
 
 interface CanvasEditorProps {
   initialDesign: SignDesign;
   onTestDesign: (design: SignDesign) => void;
   versionNumber: number;
+  isWindowMode?: boolean;
 }
 
-type StepKey = 1 | 2 | 3 | 4 | 5;
+export type StepKey = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   initialDesign,
   onTestDesign,
   versionNumber,
+  isWindowMode = false,
 }) => {
   const [design, setDesign] = useState<SignDesign>({ ...initialDesign });
   const [history, setHistory] = useState<SignDesign[]>([{ ...initialDesign }]);
   const [historyIdx, setHistoryIdx] = useState(0);
   const [currentStep, setCurrentStep] = useState<StepKey>(1);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([1]);
 
   const updateDesign = (next: Partial<SignDesign>) => {
     soundEngine.playPop();
@@ -46,6 +52,18 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     newHistory.push(updated);
     setHistory(newHistory);
     setHistoryIdx(newHistory.length - 1);
+
+    if (!completedSteps.includes(currentStep)) {
+      setCompletedSteps([...completedSteps, currentStep]);
+    }
+  };
+
+  const handleStepChange = (step: StepKey) => {
+    soundEngine.playClick();
+    setCurrentStep(step);
+    if (!completedSteps.includes(step)) {
+      setCompletedSteps((prev) => [...prev, step]);
+    }
   };
 
   const handleUndo = () => {
@@ -70,38 +88,59 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   const isGoodContrast = contrast >= 4.0;
   const isFairContrast = contrast >= 2.5 && contrast < 4.0;
 
-  const stepInfo = {
-    1: {
-      title: 'Шаг 1: Форма и Размер',
-      icon: <Square className="w-5 h-5 text-sky-500" />,
-      color: 'text-sky-600',
-      sparkTip: 'Для начала выберем форму! Овальная, скруглённая или классическая? Подбери размер, чтобы было видно с десяти метров!',
+  const stepList = [
+    {
+      id: 1 as StepKey,
+      title: 'Шаг 1: Форма вывески',
+      shortTitle: 'Форма',
+      icon: <Square className="w-4 h-4" />,
+      sparkTip: 'Выбери форму вывески. Овальная, скругленная или классическая?',
     },
-    2: {
-      title: 'Шаг 2: Цвета и Контраст',
-      icon: <Palette className="w-5 h-5 text-amber-500" />,
-      color: 'text-amber-600',
-      sparkTip: 'Главный секрет читаемости — контраст! Тёмные буквы на светлом или светлые на тёмном читаются сразу.',
+    {
+      id: 2 as StepKey,
+      title: 'Шаг 2: Название',
+      shortTitle: 'Название',
+      icon: <Edit3 className="w-4 h-4" />,
+      sparkTip: 'Напиши название. Как прохожие узнают нашу пекарню?',
     },
-    3: {
-      title: 'Шаг 3: Название, Шрифт и Цвет Букв',
-      icon: <Type className="w-5 h-5 text-rose-500" />,
-      color: 'text-rose-600',
-      sparkTip: 'Что напишем? Выбирай аппетитный и понятный шрифт, который легко прочесть на ходу!',
+    {
+      id: 3 as StepKey,
+      title: 'Шаг 3: Шрифт',
+      shortTitle: 'Шрифт',
+      icon: <Type className="w-4 h-4" />,
+      sparkTip: 'Выбери шрифт. Важно, чтобы надпись легко читалась на ходу!',
     },
-    4: {
-      title: 'Шаг 4: Символ и Иконка',
-      icon: <Smile className="w-5 h-5 text-purple-500" />,
-      color: 'text-purple-600',
-      sparkTip: 'Иконка — главная подсказка! Прохожий за полсекунды поймёт, что здесь сладости!',
+    {
+      id: 4 as StepKey,
+      title: 'Шаг 4: Цвет фона',
+      shortTitle: 'Цвет фона',
+      icon: <Palette className="w-4 h-4 text-amber-500" />,
+      sparkTip: 'Выбери цвет фона. Аппетитный пастельный или яркий контрастный?',
     },
-    5: {
-      title: 'Шаг 5: Проверка и Запуск',
-      icon: <Rocket className="w-5 h-5 text-emerald-500" />,
-      color: 'text-emerald-600',
-      sparkTip: 'Отлично! Вывеска готова. Повесим её на фасад и проверим реакцию горожан!',
+    {
+      id: 5 as StepKey,
+      title: 'Шаг 5: Цвет текста',
+      shortTitle: 'Цвет текста',
+      icon: <Palette className="w-4 h-4 text-rose-500" />,
+      sparkTip: 'Выбери цвет текста. Помни про контраст между буквами и фоном!',
     },
-  };
+    {
+      id: 6 as StepKey,
+      title: 'Шаг 6: Иконка',
+      shortTitle: 'Иконка',
+      icon: <Smile className="w-4 h-4" />,
+      sparkTip: 'Добавь иконку. Круассан или кекс сразу подскажут, что здесь сладости!',
+    },
+    {
+      id: 7 as StepKey,
+      title: 'Шаг 7: Проверка контраста',
+      shortTitle: 'Контраст',
+      icon: <Eye className="w-4 h-4" />,
+      sparkTip: 'Проверь контраст. Если всё отлично — нажимай "Проверить на улице"!',
+    },
+  ];
+
+  const currentStepData = stepList.find((s) => s.id === currentStep) || stepList[0];
 
   const shapeCards: Array<{ id: ShapeType; label: string; icon: string; bg: string; border: string }> = [
     { id: 'rounded', label: 'Скругленная', icon: '▢', bg: 'bg-sky-50 text-sky-700', border: 'border-sky-400' },
@@ -111,7 +150,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     { id: 'banner', label: 'Баннер', icon: '▭', bg: 'bg-rose-50 text-rose-700', border: 'border-rose-400' },
   ];
 
-  const colorPalette = [
+  const bgColorPalette = [
     { name: 'Кремовый', hex: '#FFF7ED', border: '#FED7AA' },
     { name: 'Солнечный', hex: '#FEF3C7', border: '#FDE047' },
     { name: 'Нежно-розовый', hex: '#FFE4E6', border: '#FDA4AF' },
@@ -129,6 +168,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     { name: 'Тёмно-синий', hex: '#0F172A', border: '#020617' },
     { name: 'Белоснежный', hex: '#FFFFFF', border: '#CBD5E1' },
     { name: 'Малиновый', hex: '#E11D48', border: '#BE123C' },
+    { name: 'Золотой', hex: '#F59E0B', border: '#D97706' },
   ];
 
   const fontCards: Array<{ id: FontStyle; label: string; desc: string; sample: string }> = [
@@ -147,83 +187,137 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
     { id: 'none', label: 'Без иконки', emoji: '🚫', desc: 'Только название', bg: 'bg-slate-100 border-slate-300 text-slate-700' },
   ];
 
-  const presetTexts = ['Кондитерская Мари', 'Свежие Эклеры', 'Сладости у Мари'];
+  const presetTexts = ['Кондитерская Мари', 'Свежие Эклеры', 'Сладости у Мари', 'Sweet Marie 🥐'];
 
   return (
-    <div className="relative w-full h-screen bg-[#F7F9FC] text-slate-800 overflow-hidden select-none flex flex-col justify-between font-sans">
-      
-      {/* TOP HEADER: Duolingo Style Light Bar */}
-      <header className="bg-white border-b-2 border-slate-200 px-6 py-3 flex items-center justify-between z-30 shadow-xs">
+    <div className={`relative w-full ${isWindowMode ? 'h-full' : 'h-screen'} bg-[#F7F9FC] text-slate-800 overflow-hidden select-none flex flex-col justify-between font-sans`}>
+      {/* TOP HEADER */}
+      <header className="bg-white border-b-2 border-slate-200 px-4 sm:px-6 py-2.5 flex items-center justify-between z-30 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-2xl bg-[#FFC800] border-b-4 border-[#E5A500] text-slate-950 font-black text-xs md:text-sm flex items-center gap-2 shadow-xs">
+          <div className="px-3.5 py-1.5 rounded-2xl bg-[#FFC800] border-b-3 border-[#E5A500] text-slate-950 font-black text-xs md:text-sm flex items-center gap-2 shadow-xs">
             <Sparkles className="w-4 h-4 fill-current" />
-            <span>ВЕРСИЯ ВЫВЕСКИ #{versionNumber}</span>
+            <span>ХОЛСТ ДИЗАЙНЕРА • ВЕРСИЯ #{versionNumber}</span>
           </div>
         </div>
 
-        {/* Undo / Redo Duolingo Buttons */}
+        {/* Undo / Redo */}
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleUndo}
             disabled={historyIdx <= 0}
-            className={`px-3.5 py-2 rounded-2xl border-2 font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl border-2 font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
               historyIdx > 0
-                ? 'bg-white border-slate-300 border-b-4 text-slate-700 hover:bg-slate-50 active:border-b-2 active:translate-y-0.5'
+                ? 'bg-white border-slate-300 border-b-3 text-slate-700 hover:bg-slate-50 active:border-b-2 active:translate-y-0.5'
                 : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
-            <Undo2 className="w-4 h-4" /> <span className="hidden sm:inline">Отменить</span>
+            <Undo2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Отменить</span>
           </button>
           <button
             type="button"
             onClick={handleRedo}
             disabled={historyIdx >= history.length - 1}
-            className={`px-3.5 py-2 rounded-2xl border-2 font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl border-2 font-black text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
               historyIdx < history.length - 1
-                ? 'bg-white border-slate-300 border-b-4 text-slate-700 hover:bg-slate-50 active:border-b-2 active:translate-y-0.5'
+                ? 'bg-white border-slate-300 border-b-3 text-slate-700 hover:bg-slate-50 active:border-b-2 active:translate-y-0.5'
                 : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
-            <Redo2 className="w-4 h-4" /> <span className="hidden sm:inline">Повторить</span>
+            <Redo2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Повторить</span>
           </button>
         </div>
 
-        {/* Primary Duolingo Green Button to Launch Test */}
+        {/* Primary Green Button to Launch Test */}
         <button
           type="button"
           onClick={() => {
             soundEngine.playTestStart();
             onTestDesign(design);
           }}
-          className="px-6 py-2.5 rounded-2xl bg-[#58CC02] border-b-4 border-[#46A302] hover:bg-[#46A302] active:border-b-0 active:translate-y-1 text-white font-black text-xs md:text-sm uppercase tracking-wider shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+          className="px-5 py-2 rounded-2xl bg-[#58CC02] border-b-3 border-[#46A302] hover:bg-[#46A302] active:border-b-0 active:translate-y-0.5 text-white font-black text-xs md:text-sm uppercase tracking-wider shadow-md flex items-center gap-2 transition-all cursor-pointer"
         >
-          <Rocket className="w-4 h-4 fill-current" /> Протестировать ➔
+          <Rocket className="w-4 h-4 fill-current" /> Проверить на улице ➔
         </button>
       </header>
 
-      {/* MAIN WORKSPACE: LEFT BIG CANVAS (60%) + RIGHT TOOLS PANEL (40%) */}
-      <main className="flex-1 flex flex-col md:flex-row w-full h-[calc(100vh-65px)] p-4 md:p-6 gap-6 overflow-hidden">
-        
-        {/* ================= LEFT SIDE: GIANT INTERACTIVE DESIGN CANVAS ================= */}
-        <div className="flex-[3] bg-white border-4 border-slate-200 rounded-[36px] shadow-sm flex flex-col items-center justify-between p-6 relative overflow-hidden">
-          
-          {/* Top Spark Advice Speech Bubble (Duolingo Owl Style) */}
+      {/* MAIN WORKSPACE: 3 COLUMNS OR 2 COLUMNS */}
+      <main className={`flex-1 flex flex-col md:flex-row w-full ${isWindowMode ? 'h-[calc(100%-55px)]' : 'h-[calc(100vh-65px)]'} p-3 md:p-4 gap-3 md:gap-4 overflow-hidden`}>
+        {/* ================= LEFT COLUMN: STEP NAVIGATION CHECKLIST (7 STEPS) ================= */}
+        <div className="w-full md:w-64 bg-white border-2 border-slate-200 rounded-[28px] shadow-sm p-4 flex flex-col justify-between overflow-y-auto shrink-0">
+          <div>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3 px-1">
+              Шаги разработки ({completedSteps.length}/7)
+            </h4>
+            <div className="space-y-1.5">
+              {stepList.map((step) => {
+                const isCurrent = currentStep === step.id;
+                const isDone = completedSteps.includes(step.id);
+
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => handleStepChange(step.id)}
+                    className={`w-full p-2.5 rounded-2xl text-left flex items-center justify-between text-xs font-bold transition-all cursor-pointer border ${
+                      isCurrent
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-200'
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+                        isCurrent ? 'bg-white text-indigo-700' : 'bg-slate-100 text-slate-700'
+                      }`}>
+                        {step.id}
+                      </span>
+                      <span>{step.shortTitle}</span>
+                    </div>
+
+                    {isDone && (
+                      <CheckCircle2 className={`w-4 h-4 ${isCurrent ? 'text-white' : 'text-emerald-500'}`} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 mt-2">
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.playTestStart();
+                onTestDesign(design);
+              }}
+              className="w-full py-3 rounded-2xl bg-[#58CC02] hover:bg-[#46A302] text-white font-black text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
+            >
+              <span>Проверить на улице</span>
+              <Rocket className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* ================= MIDDLE: GIANT INTERACTIVE DESIGN CANVAS ================= */}
+        <div className="flex-1 bg-white border-4 border-slate-200 rounded-[36px] shadow-sm flex flex-col items-center justify-between p-6 relative overflow-hidden">
+          {/* Top Spark Advice Speech Bubble */}
           <div className="relative z-10 w-full max-w-2xl bg-[#FFFBEB] border-3 border-[#FDE047] rounded-3xl p-4 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#FEF08A] border-2 border-[#EAB308] flex items-center justify-center shrink-0 shadow-xs">
-              <SparkSprite emotion="happy" size={48} />
+            <div className="relative shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-[#FEF08A] border-2 border-[#EAB308] flex items-center justify-center shadow-xs">
+                <SparkSprite emotion="happy" size={48} />
+              </div>
             </div>
             <div className="flex-1">
               <div className="text-[11px] font-black uppercase text-[#B45309] tracking-wider mb-0.5 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 fill-current" /> Совет от Спарк:
               </div>
               <p className="text-xs md:text-sm font-bold text-slate-800 leading-snug">
-                {stepInfo[currentStep].sparkTip}
+                {currentStepData.sparkTip}
               </p>
             </div>
           </div>
 
-          {/* Center Giant Sign Display (Spacious, Crisp & Unclipped) */}
+          {/* Center Giant Sign Display */}
           <div className="relative z-10 w-full flex-1 flex flex-col items-center justify-center py-4">
             <div className="w-full flex items-center justify-center p-6 md:p-10 rounded-[32px] bg-[#F8FAFC] border-2 border-dashed border-slate-300">
               <div className="transform transition-transform duration-200 hover:scale-105 filter drop-shadow-xl">
@@ -251,360 +345,32 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
             </div>
           </div>
 
-          {/* Canvas Bottom Helper */}
-          <div className="relative z-10 text-slate-400 text-xs font-bold text-center">
-            ✨ Изменяй параметры справа — вывеска на холсте сразу преображается!
-          </div>
-        </div>
+          {/* Canvas Bottom Navigation between Steps */}
+          <div className="relative z-10 w-full flex items-center justify-between pt-2">
+            <button
+              type="button"
+              disabled={currentStep === 1}
+              onClick={() => handleStepChange((currentStep - 1) as StepKey)}
+              className={`px-4 py-2 rounded-2xl border-2 font-black text-xs flex items-center gap-1.5 cursor-pointer ${
+                currentStep > 1
+                  ? 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                  : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
+            >
+              <ArrowLeft className="w-4 h-4" /> Назад
+            </button>
 
-        {/* ================= RIGHT SIDE: DUOLINGO-STYLE SEQUENTIAL TOOLS ================= */}
-        <div className="flex-[2] max-w-lg bg-white border-4 border-slate-200 rounded-[36px] shadow-sm flex flex-col justify-between p-6 overflow-hidden">
-          
-          {/* Step Header & Step Number Buttons */}
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b-2 border-slate-100 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-2xl bg-slate-100">
-                  {stepInfo[currentStep].icon}
-                </div>
-                <h3 className={`text-sm md:text-base font-black ${stepInfo[currentStep].color}`}>
-                  {stepInfo[currentStep].title}
-                </h3>
-              </div>
+            <span className="text-slate-400 text-xs font-bold">
+              Шаг {currentStep} из 7
+            </span>
 
-              {/* Step Numbers 1 to 5 */}
-              <div className="flex items-center gap-1.5 bg-slate-100 p-1.5 rounded-2xl">
-                {([1, 2, 3, 4, 5] as StepKey[]).map((stepNum) => (
-                  <button
-                    type="button"
-                    key={stepNum}
-                    onClick={() => {
-                      soundEngine.playClick();
-                      setCurrentStep(stepNum);
-                    }}
-                    className={`w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
-                      currentStep === stepNum
-                        ? 'bg-[#1CB0F6] border-b-3 border-[#1899D6] text-white shadow-xs scale-105'
-                        : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'
-                    }`}
-                  >
-                    {stepNum}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Dynamic Step Content */}
-            <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
-              
-              {/* STEP 1: SHAPE & SIZE */}
-              {currentStep === 1 && (
-                <div className="space-y-5 animate-fadeIn">
-                  <div>
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-2">
-                      Выбери форму вывески:
-                    </label>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {shapeCards.map((s) => (
-                        <button
-                          type="button"
-                          key={s.id}
-                          onClick={() => updateDesign({ shape: s.id })}
-                          className={`p-3 rounded-2xl border-2 text-xs font-black flex items-center gap-2.5 transition-all cursor-pointer ${
-                            design.shape === s.id
-                              ? `${s.bg} ${s.border} border-b-4 ring-2 ring-indigo-200 scale-102`
-                              : 'bg-white border-slate-200 border-b-4 text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          <span className="text-xl font-bold">{s.icon}</span>
-                          <span>{s.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs font-black text-slate-700 mb-1">
-                      <span>Ширина вывески:</span>
-                      <span className="text-sky-600 font-extrabold">{design.signWidth} px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="180"
-                      max="420"
-                      value={design.signWidth}
-                      onChange={(e) => updateDesign({ signWidth: Number(e.target.value) })}
-                      className="w-full accent-sky-500 h-3 bg-slate-200 rounded-lg cursor-pointer"
-                    />
-                    <div className="flex justify-between text-[11px] text-slate-400 font-bold mt-1">
-                      <span>Компактная</span>
-                      <span>Оптимальная</span>
-                      <span>Широкая</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-xs font-black text-slate-700 mb-1">
-                      <span>Высота вывески:</span>
-                      <span className="text-sky-600 font-extrabold">{design.signHeight} px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="70"
-                      max="180"
-                      value={design.signHeight}
-                      onChange={(e) => updateDesign({ signHeight: Number(e.target.value) })}
-                      className="w-full accent-sky-500 h-3 bg-slate-200 rounded-lg cursor-pointer"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 2: COLORS & CONTRAST */}
-              {currentStep === 2 && (
-                <div className="space-y-5 animate-fadeIn">
-                  <div>
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-2">
-                      Цвет фона вывески:
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {colorPalette.map((c) => (
-                        <button
-                          type="button"
-                          key={c.hex}
-                          onClick={() => updateDesign({ bgColor: c.hex })}
-                          className={`p-2.5 rounded-2xl border-2 border-b-4 font-black text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                            design.bgColor === c.hex
-                              ? 'bg-amber-50 border-amber-400 text-amber-950 shadow-xs'
-                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
-                          }`}
-                        >
-                          <span
-                            className="w-6 h-6 rounded-xl border border-slate-300 shrink-0 flex items-center justify-center shadow-xs"
-                            style={{ backgroundColor: c.hex }}
-                          >
-                            {design.bgColor === c.hex && (
-                              <Check className={`w-3.5 h-3.5 font-bold ${c.hex === '#FFFFFF' || c.hex === '#FFF7ED' ? 'text-slate-900' : 'text-white'}`} />
-                            )}
-                          </span>
-                          <span>{c.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-2">
-                      Цвет букв:
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {textColorPalette.map((c) => (
-                        <button
-                          type="button"
-                          key={c.hex}
-                          onClick={() => updateDesign({ textColor: c.hex })}
-                          className={`p-2.5 rounded-2xl border-2 border-b-4 font-black text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                            design.textColor === c.hex
-                              ? 'bg-rose-50 border-rose-400 text-rose-950 shadow-xs'
-                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
-                          }`}
-                        >
-                          <span
-                            className="w-6 h-6 rounded-xl border border-slate-300 shrink-0 flex items-center justify-center shadow-xs"
-                            style={{ backgroundColor: c.hex }}
-                          >
-                            {design.textColor === c.hex && (
-                              <Check className={`w-3.5 h-3.5 font-bold ${c.hex === '#FFFFFF' ? 'text-slate-900' : 'text-white'}`} />
-                            )}
-                          </span>
-                          <span>{c.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 3: TEXT, FONT & TEXT COLOR */}
-              {currentStep === 3 && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div>
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-1">
-                      Текст на вывеске:
-                    </label>
-                    <div className="relative flex items-center">
-                      <Edit3 className="w-4 h-4 text-rose-500 absolute left-3.5 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={design.text}
-                        onChange={(e) => updateDesign({ text: e.target.value })}
-                        placeholder="Название пекарни..."
-                        className="w-full pl-10 pr-3 py-3 rounded-2xl bg-slate-50 border-2 border-slate-200 text-slate-800 text-sm font-black focus:outline-none focus:border-rose-500 focus:bg-white transition-all shadow-inner"
-                        maxLength={28}
-                      />
-                    </div>
-
-                    {/* Presets Badges */}
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {presetTexts.map((txt) => (
-                        <button
-                          type="button"
-                          key={txt}
-                          onClick={() => updateDesign({ text: txt })}
-                          className="px-3 py-1.5 rounded-xl bg-slate-100 border-2 border-slate-200 border-b-3 hover:bg-rose-50 hover:border-rose-300 text-slate-700 hover:text-rose-700 text-xs font-extrabold transition-all cursor-pointer"
-                        >
-                          + {txt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Letter Color Choice directly on Step 3 */}
-                  <div>
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-2">
-                      Цвет букв:
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {textColorPalette.map((c) => (
-                        <button
-                          type="button"
-                          key={c.hex}
-                          onClick={() => updateDesign({ textColor: c.hex })}
-                          className={`p-2.5 rounded-2xl border-2 border-b-4 font-black text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                            design.textColor === c.hex
-                              ? 'bg-rose-50 border-rose-400 text-rose-950 shadow-xs'
-                              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
-                          }`}
-                        >
-                          <span
-                            className="w-6 h-6 rounded-xl border border-slate-300 shrink-0 flex items-center justify-center shadow-xs"
-                            style={{ backgroundColor: c.hex }}
-                          >
-                            {design.textColor === c.hex && (
-                              <Check className={`w-3.5 h-3.5 font-bold ${c.hex === '#FFFFFF' ? 'text-slate-900' : 'text-white'}`} />
-                            )}
-                          </span>
-                          <span>{c.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-1.5">
-                      Стиль шрифта:
-                    </label>
-                    <div className="space-y-2">
-                      {fontCards.map((f) => (
-                        <button
-                          type="button"
-                          key={f.id}
-                          onClick={() => updateDesign({ fontStyle: f.id })}
-                          className={`w-full p-3 rounded-2xl border-2 text-left flex items-center justify-between transition-all cursor-pointer ${
-                            design.fontStyle === f.id
-                              ? 'bg-rose-50 border-rose-400 border-b-4 text-rose-950'
-                              : 'bg-white border-slate-200 border-b-4 text-slate-700 hover:bg-slate-50'
-                          }`}
-                        >
-                          <div>
-                            <div className="text-xs font-black">{f.label}</div>
-                            <div className="text-[11px] text-slate-500 font-semibold">{f.desc}</div>
-                          </div>
-                          {design.fontStyle === f.id && <Check className="w-5 h-5 text-rose-600 font-bold" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 4: ICON */}
-              {currentStep === 4 && (
-                <div className="space-y-3 animate-fadeIn">
-                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide block mb-1">
-                    Выбери иконку-символ:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {iconOptions.map((ic) => (
-                      <button
-                        type="button"
-                        key={ic.id}
-                        onClick={() => updateDesign({ icon: ic.id })}
-                        className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
-                          design.icon === ic.id
-                            ? `${ic.bg} border-b-4 ring-2 ring-purple-300 scale-102`
-                            : 'bg-white border-slate-200 border-b-4 text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <span className="text-3xl">{ic.emoji}</span>
-                        <span className="text-xs font-black">{ic.label}</span>
-                        <span className="text-[10px] text-slate-500 font-semibold text-center">{ic.desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* STEP 5: READY TO TEST */}
-              {currentStep === 5 && (
-                <div className="space-y-4 animate-fadeIn text-slate-800">
-                  <div className="bg-[#ECFDF5] border-2 border-[#A7F3D0] rounded-2xl p-4 space-y-2">
-                    <h4 className="text-xs font-black text-[#065F46] uppercase flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-emerald-600 fill-current" /> Проверка готовности вывески
-                    </h4>
-                    <ul className="text-xs space-y-2 font-black text-slate-700">
-                      <li className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs">✓</span>
-                        Форма: {design.shape} ({design.signWidth} × {design.signHeight} px)
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs">✓</span>
-                        Контраст: {isGoodContrast ? 'Отличный (высокая читаемость)' : 'Выбран'}
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs">✓</span>
-                        Текст: «{design.text}»
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs">✓</span>
-                        Иконка: {design.icon}
-                      </li>
-                    </ul>
-                  </div>
-
-                  <p className="text-xs font-bold text-slate-500 text-center leading-relaxed">
-                    Нажми зеленую кнопку ниже, чтобы повесить вывеску над пекарней и увидеть реакции прохожих!
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Bottom Action Controls (Duolingo 3D Tactile Buttons) */}
-          <div className="pt-4 border-t-2 border-slate-100 flex items-center justify-between gap-3 mt-3">
-            {currentStep > 1 ? (
+            {currentStep < 7 ? (
               <button
                 type="button"
-                onClick={() => {
-                  soundEngine.playClick();
-                  setCurrentStep((prev) => (prev - 1) as StepKey);
-                }}
-                className="px-5 py-3 rounded-2xl bg-white border-2 border-slate-300 border-b-4 hover:bg-slate-50 active:border-b-2 active:translate-y-0.5 text-slate-700 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-xs"
+                onClick={() => handleStepChange((currentStep + 1) as StepKey)}
+                className="px-5 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" /> Назад
-              </button>
-            ) : <div />}
-
-            {currentStep < 5 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  soundEngine.playSuccess();
-                  setCurrentStep((prev) => (prev + 1) as StepKey);
-                }}
-                className="ml-auto px-7 py-3 rounded-2xl bg-[#1CB0F6] border-b-4 border-[#1899D6] hover:bg-[#1899D6] active:border-b-0 active:translate-y-1 text-white font-black text-sm uppercase tracking-wider shadow-sm flex items-center gap-2 transition-all cursor-pointer transform"
-              >
-                <span>Дальше</span>
+                <span>Далее</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
@@ -614,11 +380,255 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
                   soundEngine.playTestStart();
                   onTestDesign(design);
                 }}
-                className="w-full py-4 rounded-2xl bg-[#58CC02] border-b-4 border-[#46A302] hover:bg-[#46A302] active:border-b-0 active:translate-y-1 text-white font-black text-sm md:text-base uppercase tracking-wider shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer transform animate-pulse"
+                className="px-5 py-2 rounded-2xl bg-[#58CC02] hover:bg-[#46A302] text-white font-black text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
-                <Rocket className="w-5 h-5 fill-current" /> Протестировать на улице!
+                <span>На улицу!</span>
+                <Rocket className="w-4 h-4" />
               </button>
             )}
+          </div>
+        </div>
+
+        {/* ================= RIGHT COLUMN: STEP SPECIFIC CONTROLS ================= */}
+        <div className="w-full md:w-80 bg-white border-4 border-slate-200 rounded-[36px] shadow-sm flex flex-col justify-between p-6 overflow-hidden shrink-0">
+          <div>
+            <div className="flex items-center gap-2 pb-3 border-b-2 border-slate-100 mb-4">
+              <div className="p-2 rounded-2xl bg-slate-100">
+                {currentStepData.icon}
+              </div>
+              <h3 className="text-sm font-black text-slate-900">
+                {currentStepData.title}
+              </h3>
+            </div>
+
+            {/* Step Controls */}
+            <div className="space-y-4 max-h-[460px] overflow-y-auto pr-1">
+              {/* STEP 1: SHAPE */}
+              {currentStep === 1 && (
+                <div className="space-y-4 animate-fadeIn">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide block">
+                    Выбери форму:
+                  </label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {shapeCards.map((s) => (
+                      <button
+                        type="button"
+                        key={s.id}
+                        onClick={() => updateDesign({ shape: s.id })}
+                        className={`p-3 rounded-2xl border-2 text-xs font-black flex items-center gap-3 transition-all cursor-pointer ${
+                          design.shape === s.id
+                            ? `${s.bg} ${s.border} border-b-4 ring-2 ring-indigo-200 scale-102`
+                            : 'bg-white border-slate-200 border-b-4 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="text-xl font-bold">{s.icon}</span>
+                        <span>{s.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="pt-2">
+                    <div className="flex justify-between text-xs font-black text-slate-700 mb-1">
+                      <span>Ширина: {design.signWidth} px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="180"
+                      max="420"
+                      value={design.signWidth}
+                      onChange={(e) => updateDesign({ signWidth: Number(e.target.value) })}
+                      className="w-full accent-indigo-600 h-2.5 bg-slate-200 rounded-lg cursor-pointer"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: NAME / TEXT */}
+              {currentStep === 2 && (
+                <div className="space-y-4 animate-fadeIn">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide block">
+                    Текст на вывеске:
+                  </label>
+                  <div className="relative flex items-center">
+                    <Edit3 className="w-4 h-4 text-indigo-500 absolute left-3.5 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={design.text}
+                      onChange={(e) => updateDesign({ text: e.target.value })}
+                      placeholder="Название пекарни..."
+                      className="w-full pl-10 pr-3 py-3 rounded-2xl bg-slate-50 border-2 border-slate-200 text-slate-800 text-sm font-black focus:outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner"
+                      maxLength={28}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[11px] font-black text-slate-400">Быстрые варианты:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {presetTexts.map((txt) => (
+                        <button
+                          type="button"
+                          key={txt}
+                          onClick={() => updateDesign({ text: txt })}
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-700 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 text-xs font-bold transition-all cursor-pointer"
+                        >
+                          + {txt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: FONT */}
+              {currentStep === 3 && (
+                <div className="space-y-3 animate-fadeIn">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide block">
+                    Стиль шрифта:
+                  </label>
+                  <div className="space-y-2">
+                    {fontCards.map((f) => (
+                      <button
+                        type="button"
+                        key={f.id}
+                        onClick={() => updateDesign({ fontStyle: f.id })}
+                        className={`w-full p-3 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                          design.fontStyle === f.id
+                            ? 'bg-indigo-50 border-indigo-500 border-b-4 shadow-xs'
+                            : 'bg-white border-slate-200 hover:bg-slate-50 border-b-4'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="font-black text-xs text-slate-800">{f.label}</span>
+                          {design.fontStyle === f.id && <Check className="w-4 h-4 text-indigo-600" />}
+                        </div>
+                        <p className="text-[11px] text-slate-500 font-medium">{f.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: BACKGROUND COLOR */}
+              {currentStep === 4 && (
+                <div className="space-y-3 animate-fadeIn">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide block">
+                    Цвет фона вывески:
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {bgColorPalette.map((c) => (
+                      <button
+                        type="button"
+                        key={c.hex}
+                        onClick={() => updateDesign({ bgColor: c.hex })}
+                        className={`p-2 rounded-2xl border-2 border-b-4 font-black text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                          design.bgColor === c.hex
+                            ? 'bg-indigo-50 border-indigo-400 text-indigo-950 shadow-xs'
+                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <span
+                          className="w-5 h-5 rounded-lg border border-slate-300 shrink-0 flex items-center justify-center shadow-xs"
+                          style={{ backgroundColor: c.hex }}
+                        >
+                          {design.bgColor === c.hex && (
+                            <Check className={`w-3 h-3 font-bold ${c.hex === '#FFFFFF' || c.hex === '#FFF7ED' ? 'text-slate-900' : 'text-white'}`} />
+                          )}
+                        </span>
+                        <span className="truncate">{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 5: TEXT COLOR */}
+              {currentStep === 5 && (
+                <div className="space-y-3 animate-fadeIn">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide block">
+                    Цвет букв:
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {textColorPalette.map((c) => (
+                      <button
+                        type="button"
+                        key={c.hex}
+                        onClick={() => updateDesign({ textColor: c.hex })}
+                        className={`p-2 rounded-2xl border-2 border-b-4 font-black text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                          design.textColor === c.hex
+                            ? 'bg-rose-50 border-rose-400 text-rose-950 shadow-xs'
+                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <span
+                          className="w-5 h-5 rounded-lg border border-slate-300 shrink-0 flex items-center justify-center shadow-xs"
+                          style={{ backgroundColor: c.hex }}
+                        >
+                          {design.textColor === c.hex && (
+                            <Check className={`w-3 h-3 font-bold ${c.hex === '#FFFFFF' ? 'text-slate-900' : 'text-white'}`} />
+                          )}
+                        </span>
+                        <span className="truncate">{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 6: ICON */}
+              {currentStep === 6 && (
+                <div className="space-y-3 animate-fadeIn">
+                  <label className="text-xs font-black text-slate-700 uppercase tracking-wide block">
+                    Символ на вывеске:
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {iconOptions.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => updateDesign({ icon: item.id })}
+                        className={`p-2.5 rounded-2xl border-2 border-b-4 flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                          design.icon === item.id
+                            ? `${item.bg} border-b-4 ring-2 ring-indigo-300 scale-102`
+                            : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <span className="text-2xl">{item.emoji}</span>
+                        <span className="text-xs font-extrabold">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 7: CONTRAST CHECK */}
+              {currentStep === 7 && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className={`p-4 rounded-2xl border-2 ${
+                    isGoodContrast ? 'bg-emerald-50 border-emerald-300' : isFairContrast ? 'bg-amber-50 border-amber-300' : 'bg-rose-50 border-rose-300'
+                  }`}>
+                    <h5 className="font-black text-xs uppercase mb-1">
+                      {isGoodContrast ? '✅ Высокий контраст' : isFairContrast ? '⚠️ Средний контраст' : '❌ Буквы сливаются!'}
+                    </h5>
+                    <p className="text-xs text-slate-700 leading-relaxed font-semibold">
+                      {isGoodContrast
+                        ? 'Отличная читаемость! Прохожие с расстояния 10 метров четко увидят надпись за долю секунды.'
+                        : 'Рекомендуем сделать буквы темнее, а фон светлее (или наоборот), чтобы прохожим было легче прочитать.'}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEngine.playTestStart();
+                      onTestDesign(design);
+                    }}
+                    className="w-full py-4 rounded-2xl bg-[#58CC02] border-b-4 border-[#46A302] hover:bg-[#46A302] text-white font-black text-sm uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+                  >
+                    <Rocket className="w-5 h-5 fill-current" /> Проверить на улице ➔
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>

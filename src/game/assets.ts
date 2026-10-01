@@ -1,8 +1,8 @@
 export const GAME_ASSETS = {
   backgrounds: {
+    studioSpark: '/src/assets/images/studio_spark.webp',
     bakeryInterior: '/src/assets/images/bakery_interior.webp',
     bakeryStreet: '/src/assets/images/bakery_street_1790705660369.jpg',
-    worldMap: '/src/assets/images/world_map_realistic_1790705937159.jpg',
     designStudio: '/src/assets/images/design_studio_interactive_bg_1790707515031.jpg',
   },
   characters: {

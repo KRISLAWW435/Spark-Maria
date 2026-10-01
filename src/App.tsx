@@ -3,7 +3,7 @@ import { GameScene, PlayerProgress, SignDesign, TestResult } from './game/types'
 import { SaveEngine, defaultSignDesign, defaultPlayerProgress } from './game/engine/SaveEngine';
 import { evaluateDesign } from './game/engine/DesignEvaluation';
 import { HeaderNav } from './game/components/HeaderNav';
-import { WorldMap } from './game/components/WorldMap';
+import { SparkStudioScene } from './game/components/SparkStudioScene';
 import { BakeryInteriorScene } from './game/components/BakeryInteriorScene';
 import { StreetObservationScene } from './game/components/StreetObservationScene';
 import { BriefScene } from './game/components/BriefScene';
@@ -11,23 +11,43 @@ import { CanvasEditor } from './game/components/CanvasEditor';
 import { StreetTestScene } from './game/components/StreetTestScene';
 import { TestResultsScene } from './game/components/TestResultsScene';
 import { PortfolioScene } from './game/components/PortfolioScene';
+import { Smartphone, RotateCw } from 'lucide-react';
 
 export default function App() {
   const [progress, setProgress] = useState<PlayerProgress>(() => SaveEngine.loadProgress());
-  const [currentScene, setCurrentScene] = useState<GameScene>('world_map');
+  const [currentScene, setCurrentScene] = useState<GameScene>('studio');
   const [currentDesign, setCurrentDesign] = useState<SignDesign>(defaultSignDesign);
   const [currentTestResult, setCurrentTestResult] = useState<TestResult | null>(null);
   const [versionCounter, setVersionCounter] = useState(1);
+  const [studioResetKey, setStudioResetKey] = useState(0);
+  const [hasObservedStreet, setHasObservedStreet] = useState<boolean>(() => {
+    return progress.completedModules.includes('bakery_marie');
+  });
+
+  // Check portrait orientation on mobile devices
+  const [isPortrait, setIsPortrait] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && window.innerHeight > window.innerWidth && window.innerWidth < 850;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsPortrait(window.innerHeight > window.innerWidth && window.innerWidth < 850);
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
 
   // Auto-save player progress whenever it changes
   useEffect(() => {
     SaveEngine.saveProgress(progress);
   }, [progress]);
 
-  const handleSelectLocation = (locId: string) => {
-    if (locId === 'bakery_marie') {
-      setCurrentScene('intro_bakery');
-    }
+  const handleStartMarieLevel = () => {
+    setCurrentScene('intro_bakery');
   };
 
   const handleTestDesign = (designToTest: SignDesign) => {
@@ -51,7 +71,7 @@ export default function App() {
 
   const handleImproveDesign = () => {
     setVersionCounter((prev) => prev + 1);
-    setCurrentScene('canvas_editor');
+    setCurrentScene('studio');
   };
 
   const handleKeepAndFinish = () => {
@@ -94,12 +114,19 @@ export default function App() {
   };
 
   const handleResetProgress = () => {
+    try {
+      localStorage.removeItem('spark_studio_data');
+    } catch {
+      // ignore
+    }
     const reset = defaultPlayerProgress;
     setProgress(reset);
     SaveEngine.saveProgress(reset);
     setCurrentDesign(defaultSignDesign);
     setVersionCounter(1);
-    setCurrentScene('world_map');
+    setHasObservedStreet(false);
+    setStudioResetKey((prev) => prev + 1);
+    setCurrentScene('studio');
   };
 
   return (
@@ -107,18 +134,51 @@ export default function App() {
       {/* Top Header Navigation */}
       <HeaderNav
         progress={progress}
-        onOpenMap={() => setCurrentScene('world_map')}
+        onOpenStudio={() => setCurrentScene('studio')}
         onProgressUpdate={(newProg) => {
           setProgress(newProg);
-          setCurrentScene('world_map');
+          setCurrentScene('studio');
         }}
         onResetProgress={handleResetProgress}
       />
 
+      {/* Landscape Orientation Recommendation Overlay for Mobile / Tablet */}
+      {isPortrait && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-white text-center animate-fadeIn select-none">
+          <div className="relative mb-6">
+            <div className="w-16 h-28 rounded-2xl border-4 border-indigo-400/80 bg-indigo-950/40 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.5)]">
+              <Smartphone className="w-10 h-10 text-indigo-300" />
+            </div>
+            <RotateCw className="w-8 h-8 text-amber-300 absolute -top-3 -right-3 animate-spin [animation-duration:3s]" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-pink-200 to-indigo-200">
+            Поверните устройство горизонтально
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-xs leading-relaxed">
+            Дизайн-студия и ноутбук лучше всего работают в альбомном (горизонтальном) режиме! 🔄
+          </p>
+          <button
+            onClick={() => setIsPortrait(false)}
+            className="mt-6 px-6 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-slate-300 transition-colors"
+          >
+            Продолжить в вертикальном режиме
+          </button>
+        </div>
+      )}
+
       {/* Main Game Router View */}
       <main className="flex-1 relative flex flex-col">
-        {currentScene === 'world_map' && (
-          <WorldMap progress={progress} onSelectLocation={handleSelectLocation} />
+        {currentScene === 'studio' && (
+          <SparkStudioScene
+            key={studioResetKey}
+            progress={progress}
+            onStartMarieLevel={handleStartMarieLevel}
+            onOpenPortfolio={() => setCurrentScene('portfolio')}
+            hasObservedStreet={hasObservedStreet}
+            currentDesign={currentDesign}
+            onTestDesign={handleTestDesign}
+            versionNumber={versionCounter}
+          />
         )}
 
         {currentScene === 'intro_bakery' && (
@@ -126,11 +186,12 @@ export default function App() {
         )}
 
         {currentScene === 'street_observation' && (
-          <StreetObservationScene onComplete={() => setCurrentScene('brief')} />
-        )}
-
-        {currentScene === 'brief' && (
-          <BriefScene onComplete={() => setCurrentScene('canvas_editor')} />
+          <StreetObservationScene
+            onComplete={() => {
+              setHasObservedStreet(true);
+              setCurrentScene('studio');
+            }}
+          />
         )}
 
         {currentScene === 'canvas_editor' && (
@@ -159,7 +220,7 @@ export default function App() {
         {currentScene === 'portfolio' && (
           <PortfolioScene
             progress={progress}
-            onReturnToMap={() => setCurrentScene('world_map')}
+            onReturnToStudio={() => setCurrentScene('studio')}
           />
         )}
       </main>

@@ -3,7 +3,7 @@ import React from 'react';
 interface TransparentSpriteProps {
   src: string;
   alt: string;
-  height?: number;
+  height?: number | string;
   className?: string;
 }
 
@@ -13,10 +13,12 @@ export const TransparentSprite: React.FC<TransparentSpriteProps> = ({
   height = 540,
   className = '',
 }) => {
+  const heightStyle = typeof height === 'number' ? `${height}px` : height;
+
   return (
     <div
-      className={`relative inline-block select-none filter drop-shadow-[0_20px_35px_rgba(0,0,0,0.4)] transition-all duration-300 ${className}`}
-      style={{ height: `${height}px` }}
+      className={`relative inline-block select-none filter drop-shadow-[0_8px_20px_rgba(0,0,0,0.14)] brightness-[1.02] transition-all duration-300 ${className}`}
+      style={{ height: heightStyle }}
     >
       <img
         src={src}

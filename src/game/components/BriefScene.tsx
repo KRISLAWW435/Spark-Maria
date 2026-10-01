@@ -91,32 +91,29 @@ export const BriefScene: React.FC<BriefSceneProps> = ({ onComplete }) => {
 
       {/* LAYER 2: Characters Positioning (Desktop) - ONLY ONE PER SLIDE */}
       <div className="relative z-10 w-full h-full pointer-events-none">
-        {/* Marie: Grounded at bottom left, Desktop Size 624px */}
+        {/* Marie: Grounded lower down by 76px, shifted 100px right */}
         {current.speaker === 'marie' && (
-          <div className="absolute left-[10%] md:left-[15%] bottom-[16%] md:bottom-[20%] transition-all duration-300 filter drop-shadow-2xl z-20">
-            <MarieSprite emotion={current.marieEmotion} size={624} />
+          <div className="absolute left-[0%] sm:left-[3%] md:left-[6%] translate-x-[100px] bottom-[-96px] md:bottom-[-111px] transition-all duration-300 z-20">
+            <MarieSprite emotion={current.marieEmotion} size={1020} />
           </div>
         )}
 
-        {/* Spark: Shifted right & lower down */}
+        {/* Spark: Shifted more to the left and enlarged, light soft shadow */}
         {current.speaker === 'spark' && (
-          <div className="absolute right-[12%] md:right-[18%] bottom-[18%] md:bottom-[22%] animate-float transition-all duration-300 filter drop-shadow-2xl z-20">
-            <SparkSprite emotion={current.sparkEmotion} size={440} />
+          <div className="absolute right-[16%] md:right-[24%] bottom-[12%] md:bottom-[16%] animate-float transition-all duration-300 z-20">
+            <SparkSprite emotion={current.sparkEmotion} size={540} />
           </div>
         )}
       </div>
 
       {/* LAYER 3: Dialogue Box Overlay */}
-      <div className="absolute bottom-4 left-0 right-0 z-30 px-4">
-        <DialogueBox
-          speakerName={current.speakerName}
-          text={current.text}
-          speakerTagBg={current.tagBg}
-          onNext={handleNext}
-          isLast={step === script.length - 1}
-          nextButtonLabel={step === script.length - 1 ? 'Открыть Холст Редактора ➔' : 'Дальше ➔'}
-        />
-      </div>
+      <DialogueBox
+        speaker={current.speaker === 'marie' ? 'Мари' : 'Спарк'}
+        text={current.text}
+        onNext={handleNext}
+        isLast={step === script.length - 1}
+        nextButtonLabel={step === script.length - 1 ? 'Открыть Холст Редактора ➔' : 'Дальше ➔'}
+      />
     </div>
   );
 };

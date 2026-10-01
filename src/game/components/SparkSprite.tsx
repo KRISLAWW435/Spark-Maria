@@ -6,13 +6,13 @@ import { TransparentSprite } from './TransparentSprite';
 interface SparkSpriteProps {
   emotion: SparkEmotion;
   className?: string;
-  size?: number;
+  size?: number | string;
 }
 
 export const SparkSprite: React.FC<SparkSpriteProps> = ({
   emotion,
   className = '',
-  size = 580,
+  size = 560,
 }) => {
   return (
     <TransparentSprite
