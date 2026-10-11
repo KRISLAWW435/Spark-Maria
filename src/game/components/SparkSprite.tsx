@@ -1,7 +1,6 @@
 import React from 'react';
 import { SparkEmotion } from '../types';
-import { GAME_ASSETS } from '../assets';
-import { TransparentSprite } from './TransparentSprite';
+import { SparkCharacter, SparkState } from './SparkCharacter';
 
 interface SparkSpriteProps {
   emotion: SparkEmotion;
@@ -14,12 +13,17 @@ export const SparkSprite: React.FC<SparkSpriteProps> = ({
   className = '',
   size = 560,
 }) => {
+  const isDynamicActive =
+    emotion === 'excited' || emotion === 'laughing' || emotion === 'happy';
+  const sparkState: SparkState = isDynamicActive ? 'active' : 'idle';
+
   return (
-    <TransparentSprite
-      src={GAME_ASSETS.characters.spark}
-      alt={`Спарк (${emotion})`}
-      height={size}
+    <SparkCharacter
+      state={sparkState}
+      size={size}
       className={className}
+      interactive={true}
+      title={`Спарк (${emotion})`}
     />
   );
 };

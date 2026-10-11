@@ -1,15 +1,26 @@
+import studioSpark from '../assets/images/studio_spark.webp';
+import bakeryInterior from '../assets/images/bakery_interior.webp';
+import bakeryStreet from '../assets/images/bakery_street.webp';
+import designStudio from '../assets/images/design_studio_interactive_bg_1790707515031.jpg';
+import spark from '../assets/images/spark_girl_character.webp';
+import marie from '../assets/images/marie_character.webp';
+import npcChef from '../assets/images/npc_chef_silhouette_1790706908089.jpg';
+import npcGirl from '../assets/images/npc_girl_silhouette_1790706918810.jpg';
+import npcDriver from '../assets/images/npc_driver_silhouette_1790706928332.jpg';
+
 export const GAME_ASSETS = {
   backgrounds: {
-    studioSpark: '/src/assets/images/studio_spark.webp',
-    bakeryInterior: '/src/assets/images/bakery_interior.webp',
-    bakeryStreet: '/src/assets/images/bakery_street_1790705660369.jpg',
-    designStudio: '/src/assets/images/design_studio_interactive_bg_1790707515031.jpg',
+    studioSpark,
+    bakeryInterior,
+    bakeryStreet,
+    designStudio,
   },
   characters: {
-    spark: '/src/assets/images/spark_girl_character.webp',
-    marie: '/src/assets/images/marie_character.webp',
-    npcChef: '/src/assets/images/npc_chef_silhouette_1790706908089.jpg',
-    npcGirl: '/src/assets/images/npc_girl_silhouette_1790706918810.jpg',
-    npcDriver: '/src/assets/images/npc_driver_silhouette_1790706928332.jpg',
+    spark,
+    marie,
+    npcChef,
+    npcGirl,
+    npcDriver,
   },
 };
+

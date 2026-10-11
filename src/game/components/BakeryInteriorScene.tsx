@@ -23,24 +23,16 @@ export const BakeryInteriorScene: React.FC<BakeryInteriorSceneProps> = ({ onComp
   }> = [
     {
       speaker: 'marie',
-      speakerName: 'Мари (Владелица Кондитерской)',
-      text: 'Привет! Спасибо, что приехали так быстро! У меня маленькая уютная кондитерская: мы с утра выпекаем нежнейшие круассаны и эклеры...',
+      speakerName: 'Мари (Владелица пекарни)',
+      text: 'Спасибо, что приехали! Люди проходят мимо и не понимают, что здесь пекарня. Помогите!',
       marieEmotion: 'worried',
       sparkEmotion: 'neutral',
       tagBg: 'bg-rose-500 text-white',
     },
     {
-      speaker: 'marie',
-      speakerName: 'Мари (Владелица Кондитерской)',
-      text: 'Но на улице люди почему-то просто проходят мимо нашей двери и не заходят внутрь. Мы совсем теряем гостей!',
-      marieEmotion: 'worried',
-      sparkEmotion: 'thinking',
-      tagBg: 'bg-rose-500 text-white',
-    },
-    {
       speaker: 'spark',
-      speakerName: 'Спарк · Искра творчества',
-      text: 'Не переживай, Мари! Вывеска — это первое впечатление и главный интерфейс магазина. Пойдём на улицу, посмотрим, что не так!',
+      speakerName: 'Спарк',
+      text: 'Пойдём на улицу и посмотрим, что не так.',
       marieEmotion: 'hopeful',
       sparkEmotion: 'excited',
       tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
@@ -58,12 +50,14 @@ export const BakeryInteriorScene: React.FC<BakeryInteriorSceneProps> = ({ onComp
   };
 
   return (
-    <div className="relative w-full h-screen bg-amber-50 overflow-hidden select-none flex flex-col justify-between font-sans">
+    <div className="relative w-full h-screen bg-[#241711] overflow-hidden select-none flex flex-col justify-between font-sans">
       {/* LAYER 1: Bakery Interior Background */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-[#241711]">
         <img
           src={GAME_ASSETS.backgrounds.bakeryInterior}
-          alt="Интерьер кондитерской Мари"
+          alt="Интерьер пекарни Мари"
+          loading="eager"
+          decoding="sync"
           referrerPolicy="no-referrer"
           className="w-full h-full object-cover object-bottom"
         />
@@ -71,9 +65,9 @@ export const BakeryInteriorScene: React.FC<BakeryInteriorSceneProps> = ({ onComp
 
       {/* LAYER 2: Characters */}
       <div className="relative z-10 w-full h-full pointer-events-none">
-        {/* Marie */}
+        {/* Marie - Lowered down so she sits naturally and comfortably above the dialogue */}
         {current.speaker === 'marie' && (
-          <div className="absolute left-[0%] sm:left-[3%] md:left-[6%] translate-x-[100px] bottom-[-96px] md:bottom-[-111px] transition-all duration-300 z-20">
+          <div className="absolute left-[0%] sm:left-[3%] md:left-[6%] translate-x-[100px] bottom-[-180px] md:bottom-[-200px] transition-all duration-300 z-20">
             <MarieSprite emotion={current.marieEmotion} size={1020} />
           </div>
         )}

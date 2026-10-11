@@ -1,25 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { SignDesign, TestResult } from '../types';
-import { SignRender } from './SignRender';
+import confetti from 'canvas-confetti';
+import { SignDesign, TestResult, PosterDesign, StickersDesign } from '../types';
+import { BakeryFacadeView } from './BakeryFacadeView';
 import { VisitorSprite } from './VisitorSprite';
 import { MarieSprite } from './MarieSprite';
 import { SparkSprite } from './SparkSprite';
 import { soundEngine } from '../engine/SoundEngine';
-import { GAME_ASSETS } from '../assets';
 import { Sparkles, FastForward } from 'lucide-react';
 
 interface StreetTestSceneProps {
   testResult: TestResult;
   onFinishTest: () => void;
+  posterDesign?: PosterDesign | null;
+  stickersDesign?: StickersDesign | null;
 }
 
-export const StreetTestScene: React.FC<StreetTestSceneProps> = ({ testResult, onFinishTest }) => {
+export const StreetTestScene: React.FC<StreetTestSceneProps> = ({
+  testResult,
+  onFinishTest,
+  posterDesign,
+  stickersDesign,
+}) => {
   const [visitorIndex, setVisitorIndex] = useState(0);
   const [visitorPos, setVisitorPos] = useState(-20);
   const [isHalting, setIsHalting] = useState(false);
 
-  const currentReaction = testResult.visitorReactions[visitorIndex];
-  const progressPercent = Math.round(((visitorIndex + 1) / testResult.totalVisitors) * 100);
+  const orderNum = testResult.orderNumber || 1;
+  const isFinalCelebration = orderNum === 3;
+
+  useEffect(() => {
+    if (isFinalCelebration) {
+      soundEngine.playSuccess();
+      try {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+        });
+      } catch {
+        // fallback
+      }
+    }
+  }, [isFinalCelebration]);
+
+  const currentReaction = testResult.visitorReactions[visitorIndex] || {
+    visitorId: 'npcGirl',
+    name: 'Лера',
+    role: 'Сладкоежка',
+    emotion: 'happy',
+    noticed: true,
+    read: true,
+    understood: true,
+    entered: true,
+    dialogueBubble: 'Ой, как красиво украшено! Обязательно зайду за эклерами!',
+  };
+
+  const progressPercent = Math.round(((visitorIndex + 1) / (testResult.totalVisitors || 4)) * 100);
 
   useEffect(() => {
     if (!currentReaction) return;
@@ -41,7 +77,7 @@ export const StreetTestScene: React.FC<StreetTestSceneProps> = ({ testResult, on
           setVisitorPos(115);
 
           const nextTimer = setTimeout(() => {
-            if (visitorIndex < testResult.totalVisitors - 1) {
+            if (visitorIndex < (testResult.totalVisitors || 4) - 1) {
               setVisitorIndex(visitorIndex + 1);
             } else {
               onFinishTest();
@@ -49,7 +85,7 @@ export const StreetTestScene: React.FC<StreetTestSceneProps> = ({ testResult, on
           }, 600);
 
           return () => clearTimeout(nextTimer);
-        }, 3200);
+        }, 3000);
 
         return () => clearTimeout(haltTimer);
       }, 1000);
@@ -61,40 +97,43 @@ export const StreetTestScene: React.FC<StreetTestSceneProps> = ({ testResult, on
   }, [visitorIndex]);
 
   return (
-    <div className="relative w-full h-screen bg-sky-200 overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none">
-      {/* Full Bright Bakery Street Background */}
+    <div className="relative w-full h-screen bg-sky-200 overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none font-sans">
+      {/* Real Full Facade View */}
       <div className="absolute inset-0 z-0">
-        <img
-          src={GAME_ASSETS.backgrounds.bakeryStreet}
-          alt="Улица кондитерской Мари"
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover object-bottom"
+        <BakeryFacadeView
+          signDesign={testResult.signDesign}
+          posterDesign={testResult.posterDesign || posterDesign}
+          stickersDesign={testResult.stickersDesign || stickersDesign}
+          celebrationMode={isFinalCelebration}
         />
-
-        {/* Dynamically mounted sign board child designed! */}
-        <div className="absolute top-[28%] left-[40%] transform -translate-x-1/2 -translate-y-1/2 z-10 filter drop-shadow-2xl">
-          <SignRender design={testResult.signDesign} scale={0.85} />
-        </div>
       </div>
 
       {/* Top Test Progress Bar */}
-      <div className="relative z-20 max-w-xl mx-auto bg-white/95 backdrop-blur-md px-6 py-3 rounded-full border border-white/80 shadow-2xl flex items-center gap-4 mt-16 text-slate-800">
+      <div className="relative z-30 max-w-xl mx-auto bg-white/95 backdrop-blur-md px-6 py-3 rounded-full border border-white/80 shadow-2xl flex items-center gap-4 mt-16 text-slate-800">
         <Sparkles className="w-5 h-5 text-amber-500 animate-spin" />
         <div className="flex-1">
           <div className="flex justify-between text-xs font-black text-slate-700 mb-1">
-            <span className="uppercase tracking-wide">Тестирование на улице</span>
-            <span>Прохожий {visitorIndex + 1} из {testResult.totalVisitors}</span>
+            <span className="uppercase tracking-wide">
+              {orderNum === 1
+                ? 'Тест Заказа №1: Вывеска'
+                : orderNum === 2
+                ? 'Тест Заказа №2: Афиша с эклерами'
+                : 'Финал Заказа №3: Праздничная витрина!'}
+            </span>
+            <span>
+              Прохожий {visitorIndex + 1} из {testResult.totalVisitors || 4}
+            </span>
           </div>
           <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
             <div
-              className="bg-gradient-to-r from-amber-500 to-rose-500 h-full transition-all duration-300 rounded-full"
+              className="bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 h-full transition-all duration-300 rounded-full"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
         <button
           onClick={onFinishTest}
-          className="text-xs px-4 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black transition-colors flex items-center gap-1 shadow-sm"
+          className="text-xs px-4 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
         >
           <FastForward className="w-3.5 h-3.5" /> Итоги
         </button>
@@ -125,19 +164,19 @@ export const StreetTestScene: React.FC<StreetTestSceneProps> = ({ testResult, on
         </div>
       )}
 
-      {/* Side Marie & Spark Real-time Spectator Comments */}
-      <div className="relative z-20 w-full max-w-5xl mx-auto flex items-end justify-between px-6 mb-4 pointer-events-none">
+      {/* Spectator Reactions from Marie & Spark */}
+      <div className="relative z-30 w-full max-w-5xl mx-auto flex items-end justify-between px-6 mb-4 pointer-events-none">
         <div className="bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-rose-200 flex items-center gap-3 max-w-xs text-slate-800 shadow-xl pointer-events-auto">
-          <MarieSprite emotion={currentReaction?.noticed ? 'surprised' : 'worried'} size={95} />
+          <MarieSprite emotion={isFinalCelebration ? 'happy' : currentReaction?.noticed ? 'surprised' : 'worried'} size={95} />
           <p className="text-xs font-bold leading-snug">
-            Мари: {currentReaction?.noticed ? 'Ой! Смотри, остановился!' : 'Прошёл мимо… Наверное, не заметил.'}
+            Мари: {isFinalCelebration ? '«Какая красота! Витрина и вывеска сияют!»' : currentReaction?.noticed ? 'Ой! Смотри, остановился!' : 'Прошёл мимо… Наверное, не заметил.'}
           </p>
         </div>
 
         <div className="bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-amber-300 flex items-center gap-3 max-w-xs text-slate-800 shadow-xl pointer-events-auto">
-          <SparkSprite emotion={currentReaction?.entered ? 'excited' : 'thinking'} size={90} />
+          <SparkSprite emotion={isFinalCelebration ? 'excited' : currentReaction?.entered ? 'excited' : 'thinking'} size={90} />
           <p className="text-xs font-bold leading-snug">
-            Спарк: {testResult.sparkCommentary}
+            Спарк: {isFinalCelebration ? '«Все 3 заказа выполнены на высший балл!»' : testResult.sparkCommentary}
           </p>
         </div>
       </div>

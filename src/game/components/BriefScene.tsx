@@ -5,56 +5,96 @@ import { DialogueBox } from './DialogueBox';
 import { GAME_ASSETS } from '../assets';
 
 interface BriefSceneProps {
+  orderNumber?: 1 | 2 | 3;
   onComplete: () => void;
 }
 
-export const BriefScene: React.FC<BriefSceneProps> = ({ onComplete }) => {
+export const BriefScene: React.FC<BriefSceneProps> = ({ orderNumber = 1, onComplete }) => {
   const [step, setStep] = useState(0);
 
-  const script = [
-    {
-      speaker: 'marie' as const,
-      speakerName: 'Мари (Заказчик)',
-      text: 'Слушай, мне не нужна самая огромная или пафосная вывеска в городе…',
-      marieEmotion: 'thinking' as const,
-      sparkEmotion: 'neutral' as const,
-      tagBg: 'bg-rose-500 text-white',
-    },
-    {
-      speaker: 'marie' as const,
-      speakerName: 'Мари (Заказчик)',
-      text: 'Мне нужно, чтобы прохожий издалека её заметил, за секунду понял, что здесь пекут эклеры и кексы, и зашёл с улыбкой!',
-      marieEmotion: 'hopeful' as const,
-      sparkEmotion: 'happy' as const,
-      tagBg: 'bg-rose-500 text-white',
-    },
-    {
-      speaker: 'spark' as const,
-      speakerName: 'Спарк (ИИ-Наставница)',
-      text: 'Вот именно! Вывеска решает три задачи: 1) заметность, 2) контраст и читаемость, 3) узнаваемость символов!',
-      marieEmotion: 'neutral' as const,
-      sparkEmotion: 'excited' as const,
-      tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
-    },
-    {
-      speaker: 'marie' as const,
-      speakerName: 'Мари (Заказчик)',
-      text: 'Вот именно! Красота радует глаз, а понятность и контраст приводят новых гостей.',
-      marieEmotion: 'happy' as const,
-      sparkEmotion: 'excited' as const,
-      tagBg: 'bg-rose-500 text-white',
-    },
-    {
-      speaker: 'spark' as const,
-      speakerName: 'Спарк (ИИ-Наставница)',
-      text: 'Прекрасно! Переходим в наш дизайнерский холст. Подбирай цвета, настраивай размер, выбирай читаемый шрифт и узнаваемую иконку!',
-      marieEmotion: 'excited' as const,
-      sparkEmotion: 'excited' as const,
-      tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
-    },
-  ];
+  const scriptsByOrder = {
+    1: [
+      {
+        speaker: 'marie' as const,
+        speakerName: 'Мари (Заказчик)',
+        text: 'Слушай, мне не нужна самая огромная или пафосная вывеска в городе…',
+        marieEmotion: 'thinking' as const,
+        sparkEmotion: 'neutral' as const,
+        tagBg: 'bg-rose-500 text-white',
+      },
+      {
+        speaker: 'marie' as const,
+        speakerName: 'Мари (Заказчик)',
+        text: 'Мне нужно, чтобы прохожий издалека её заметил, за 1.5 секунды понял, что здесь пекут эклеры и кексы, и зашёл с улыбкой!',
+        marieEmotion: 'hopeful' as const,
+        sparkEmotion: 'happy' as const,
+        tagBg: 'bg-rose-500 text-white',
+      },
+      {
+        speaker: 'spark' as const,
+        speakerName: 'Спарк (Наставница)',
+        text: 'Отличная задача! Давай сначала осмотрим фасад пекарни в режиме Шерлок и найдем место для вывески!',
+        marieEmotion: 'excited' as const,
+        sparkEmotion: 'excited' as const,
+        tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
+      },
+    ],
+    2: [
+      {
+        speaker: 'marie' as const,
+        speakerName: 'Мари (Заказчик)',
+        text: 'Ура! Твоя вывеска отлично работает, но прохожие всё ещё не знают, что внутри у нас свежайшие французские эклеры!',
+        marieEmotion: 'happy' as const,
+        sparkEmotion: 'happy' as const,
+        tagBg: 'bg-rose-500 text-white',
+      },
+      {
+        speaker: 'spark' as const,
+        speakerName: 'Спарк (Наставница)',
+        text: 'Сделаем яркую вертикальную афишу с эклерами, призывом к действию и временем выпечки!',
+        marieEmotion: 'excited' as const,
+        sparkEmotion: 'excited' as const,
+        tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
+      },
+      {
+        speaker: 'spark' as const,
+        speakerName: 'Спарк (Наставница)',
+        text: 'Пойдем на улицу и найдем лучшую рамку на стене для размещения афиши!',
+        marieEmotion: 'hopeful' as const,
+        sparkEmotion: 'excited' as const,
+        tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
+      },
+    ],
+    3: [
+      {
+        speaker: 'marie' as const,
+        speakerName: 'Мари (Заказчик)',
+        text: 'Остался последний финальный штрих! Стёкла на витрине и двери выглядят пустыми. Хочется праздника и уюта!',
+        marieEmotion: 'thinking' as const,
+        sparkEmotion: 'neutral' as const,
+        tagBg: 'bg-rose-500 text-white',
+      },
+      {
+        speaker: 'spark' as const,
+        speakerName: 'Спарк (Наставница)',
+        text: 'Мы украсим окна и дверь стильными наклейками с персонажами и сладостями!',
+        marieEmotion: 'happy' as const,
+        sparkEmotion: 'excited' as const,
+        tagBg: 'bg-amber-500 text-slate-950 font-extrabold',
+      },
+      {
+        speaker: 'marie' as const,
+        speakerName: 'Мари (Заказчик)',
+        text: 'Давай осмотрим витрину в режиме Шерлок и выберем зоны для декораций!',
+        marieEmotion: 'excited' as const,
+        sparkEmotion: 'excited' as const,
+        tagBg: 'bg-rose-500 text-white',
+      },
+    ],
+  };
 
-  const current = script[step];
+  const script = scriptsByOrder[orderNumber] || scriptsByOrder[1];
+  const current = script[step] || script[0];
 
   const handleNext = () => {
     if (step < script.length - 1) {
@@ -65,55 +105,47 @@ export const BriefScene: React.FC<BriefSceneProps> = ({ onComplete }) => {
   };
 
   return (
-    <div className="relative w-full h-screen bg-slate-900 overflow-hidden select-none flex flex-col justify-between font-sans">
-      {/* LAYER 1: Full Desktop Studio Background */}
+    <div className="relative w-full h-screen bg-slate-900 overflow-hidden flex flex-col justify-between p-4 md:p-8 select-none font-sans">
+      {/* Background with warm bakery ambience */}
       <div className="absolute inset-0 z-0">
         <img
-          src={GAME_ASSETS.backgrounds.designStudio}
-          alt="Дизайн-студия"
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover object-bottom"
+          src={GAME_ASSETS.backgrounds.bakeryInterior}
+          alt="Интерьер пекарни Мари"
+          className="w-full h-full object-cover brightness-75"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+      </div>
+
+      {/* Top Banner */}
+      <div className="relative z-10 max-w-xl mx-auto bg-slate-900/85 backdrop-blur-md px-6 py-2.5 rounded-full border border-amber-400/50 shadow-2xl text-center mt-12 sm:mt-14 text-white">
+        <span className="text-xs sm:text-sm font-black text-amber-300 tracking-wide uppercase">
+          📋 Что хочет Мария • Заказ #{orderNumber}
+        </span>
+      </div>
+
+      {/* Sprites Showcase */}
+      <div className="relative z-10 flex items-end justify-between max-w-4xl mx-auto w-full mt-auto mb-2 pointer-events-none">
+        <div className="relative shrink-0 pointer-events-auto transform transition-transform duration-300">
+          <MarieSprite emotion={current.marieEmotion} size="lg" />
+        </div>
+
+        <div className="relative shrink-0 pointer-events-auto transform transition-transform duration-300">
+          <div className="absolute -inset-4 rounded-full bg-gradient-to-tr from-pink-400/30 via-purple-400/30 to-sky-400/30 blur-xl pointer-events-none" />
+          <div className="h-44 sm:h-56 md:h-64 w-auto drop-shadow-2xl">
+            <SparkSprite emotion={current.sparkEmotion} size="100%" className="h-full w-auto" />
+          </div>
+        </div>
+      </div>
+
+      {/* Dialogue Box */}
+      <div className="relative z-20 max-w-3xl mx-auto w-full">
+        <DialogueBox
+          speakerName={current.speakerName}
+          text={current.text}
+          onNext={handleNext}
+          isLast={step === script.length - 1}
         />
       </div>
-
-      {/* Brief Card Summary Banner Header */}
-      <div className="relative z-10 max-w-2xl mx-auto mt-12 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-white/80 shadow-2xl text-slate-900">
-        <div className="flex items-center gap-3 mb-1">
-          <span className="px-3 py-1 rounded-full bg-amber-500 text-slate-950 text-xs font-black uppercase">
-            Заказ №1
-          </span>
-          <h2 className="text-lg font-extrabold text-slate-900">БРИФ: СЕКРЕТНАЯ ВЫВЕСКА ДЛЯ МАРИ</h2>
-        </div>
-        <p className="text-xs text-slate-600 font-bold">
-          Цель юного дизайнера: привлечь прохожих в кондитерскую Мари с помощью понятной, контрастной и заметной вывески.
-        </p>
-      </div>
-
-      {/* LAYER 2: Characters Positioning (Desktop) - ONLY ONE PER SLIDE */}
-      <div className="relative z-10 w-full h-full pointer-events-none">
-        {/* Marie: Grounded lower down by 76px, shifted 100px right */}
-        {current.speaker === 'marie' && (
-          <div className="absolute left-[0%] sm:left-[3%] md:left-[6%] translate-x-[100px] bottom-[-96px] md:bottom-[-111px] transition-all duration-300 z-20">
-            <MarieSprite emotion={current.marieEmotion} size={1020} />
-          </div>
-        )}
-
-        {/* Spark: Shifted more to the left and enlarged, light soft shadow */}
-        {current.speaker === 'spark' && (
-          <div className="absolute right-[16%] md:right-[24%] bottom-[12%] md:bottom-[16%] animate-float transition-all duration-300 z-20">
-            <SparkSprite emotion={current.sparkEmotion} size={540} />
-          </div>
-        )}
-      </div>
-
-      {/* LAYER 3: Dialogue Box Overlay */}
-      <DialogueBox
-        speaker={current.speaker === 'marie' ? 'Мари' : 'Спарк'}
-        text={current.text}
-        onNext={handleNext}
-        isLast={step === script.length - 1}
-        nextButtonLabel={step === script.length - 1 ? 'Открыть Холст Редактора ➔' : 'Дальше ➔'}
-      />
     </div>
   );
 };

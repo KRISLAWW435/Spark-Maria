@@ -59,12 +59,17 @@ export function evaluateDesign(design: SignDesign, versionNumber: number): TestR
 
   // Business understanding score (0 - 1)
   let iconRelevance = 0.5;
-  if (design.icon === 'cupcake' || design.icon === 'croissant') iconRelevance = 1.0;
-  if (design.icon === 'shrimp') iconRelevance = 0.3;
-  if (design.icon === 'tire') iconRelevance = 0.2;
-  if (design.icon === 'wrench') iconRelevance = 0.2;
+  const foodIcons = ['cupcake', 'croissant', 'icon1', 'icon2', 'icon6', 'icon7', 'icon8', 'icon9', 'icon10', 'icon11', 'icon12', 'icon13', 'icon14', 'icon15', 'icon18', 'icon21', 'icon22'];
+  const absurdIcons = ['shrimp', 'tire', 'wrench', 'icon3', 'icon4', 'icon5'];
 
-  const textContainsBakery = design.text.toLowerCase().includes('кондитер') || design.text.toLowerCase().includes('сладост') || design.text.toLowerCase().includes('мари') || design.subtext.toLowerCase().includes('экл');
+  if (foodIcons.includes(design.icon)) iconRelevance = 1.0;
+  if (absurdIcons.includes(design.icon)) iconRelevance = 0.25;
+
+  const textContainsBakery =
+    design.text.toLowerCase().includes('кондитер') ||
+    design.text.toLowerCase().includes('сладост') ||
+    design.text.toLowerCase().includes('мари') ||
+    (design.subtext || '').toLowerCase().includes('экл');
 
   // Visitor reactions generation
   const visitorList = [
@@ -97,7 +102,7 @@ export function evaluateDesign(design: SignDesign, versionNumber: number): TestR
         entered = true;
         emotion = 'confused';
         specialEvent = 'chef_shrimp';
-        dialogue = '«Мон дьё! Креветка! Я думал, тут морепродукты! А это кондитерская? Тогда беру эклер!»';
+        dialogue = '«Мон дьё! Креветка! Я думал, тут морепродукты! А это пекарня? Тогда беру эклер!»';
       } else if (v.id === 'driver' && design.icon === 'tire') {
         read = true;
         understood = false;

@@ -1,11 +1,61 @@
 import React from 'react';
 import { IconType, FontStyle } from '../types';
 
-export const SignIcon: React.FC<{ icon: IconType; size?: number; color?: string }> = ({
+import icon1 from '../../assets/icon/icon1.webp';
+import icon2 from '../../assets/icon/icon2.webp';
+import icon3 from '../../assets/icon/icon3.webp';
+import icon4 from '../../assets/icon/icon4.webp';
+import icon5 from '../../assets/icon/icon5.webp';
+import icon6 from '../../assets/icon/icon6.webp';
+import icon7 from '../../assets/icon/icon7.webp';
+import icon8 from '../../assets/icon/icon8.webp';
+import icon9 from '../../assets/icon/icon9.webp';
+import icon10 from '../../assets/icon/icon10.webp';
+import icon11 from '../../assets/icon/icon11.webp';
+import icon12 from '../../assets/icon/icon12.webp';
+import icon13 from '../../assets/icon/icon13.webp';
+import icon14 from '../../assets/icon/icon14.webp';
+import icon15 from '../../assets/icon/icon15.webp';
+import icon16 from '../../assets/icon/icon16.webp';
+import icon17 from '../../assets/icon/icon17.webp';
+import icon18 from '../../assets/icon/icon18.webp';
+import icon19 from '../../assets/icon/icon19.webp';
+import icon20 from '../../assets/icon/icon20.webp';
+import icon21 from '../../assets/icon/icon21.webp';
+import icon22 from '../../assets/icon/icon22.webp';
+import icon23 from '../../assets/icon/icon23.webp';
+import icon24 from '../../assets/icon/icon24.webp';
+
+export const ICON_ASSETS_MAP: Record<string, string> = {
+  icon1, icon2, icon3, icon4, icon5, icon6, icon7, icon8, icon9, icon10,
+  icon11, icon12, icon13, icon14, icon15, icon16, icon17, icon18, icon19, icon20,
+  icon21, icon22, icon23, icon24,
+  cupcake: icon1,
+  croissant: icon2,
+  shrimp: icon3,
+  tire: icon4,
+  wrench: icon5,
+};
+
+export const SignIcon: React.FC<{ icon: string; size?: number; color?: string }> = ({
   icon,
   size = 40,
   color = '#4A2810',
 }) => {
+  if (icon === 'none') return null;
+
+  const webpSrc = ICON_ASSETS_MAP[icon];
+  if (webpSrc) {
+    return (
+      <img
+        src={webpSrc}
+        alt={icon}
+        style={{ width: size, height: size }}
+        className="object-contain drop-shadow-sm select-none pointer-events-none"
+      />
+    );
+  }
+
   switch (icon) {
     case 'cupcake':
       return (
@@ -52,7 +102,6 @@ export const SignIcon: React.FC<{ icon: IconType; size?: number; color?: string 
           <circle cx="32" cy="32" r="26" fill="#334155" stroke={color} strokeWidth="3" />
           <circle cx="32" cy="32" r="14" fill="#94A3B8" stroke="#1E293B" strokeWidth="3" />
           <circle cx="32" cy="32" r="6" fill="#334155" />
-          {/* Tread marks */}
           <path d="M 32 6 L 32 12 M 32 52 L 32 58 M 6 32 L 12 32 M 52 32 L 58 32" stroke="#FFFFFF" strokeWidth="3" />
         </svg>
       );
@@ -70,21 +119,26 @@ export const SignIcon: React.FC<{ icon: IconType; size?: number; color?: string 
         </svg>
       );
 
-    case 'none':
     default:
       return null;
   }
 };
 
-export const getFontFamilyClass = (style: FontStyle): string => {
+export const getFontFamilyClass = (style: FontStyle | string): string => {
   switch (style) {
     case 'sweet':
       return 'font-serif tracking-wide font-bold';
-    case 'handwritten':
-      return 'font-sans italic tracking-widest';
     case 'bold':
       return 'font-sans font-black uppercase tracking-wider';
+    case 'handwritten':
+      return 'font-sans italic font-bold tracking-wider';
     case 'technical':
       return 'font-mono uppercase tracking-tight font-semibold';
+    case 'playful':
+      return 'font-sans font-extrabold tracking-normal';
+    case 'elegant':
+      return 'font-serif italic tracking-widest font-medium';
+    default:
+      return 'font-sans font-bold';
   }
 };

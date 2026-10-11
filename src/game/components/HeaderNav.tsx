@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { PlayerProgress } from '../types';
 import { SaveEngine } from '../engine/SaveEngine';
 import { soundEngine } from '../engine/SoundEngine';
-import { Sparkles, Download, Upload, RefreshCw, Settings, Award, CheckCircle2 } from 'lucide-react';
+import { Download, Upload, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 interface HeaderNavProps {
   progress: PlayerProgress;
@@ -53,58 +53,41 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
 
   return (
     <>
-      <header className="fixed top-4 left-4 right-4 z-50 pointer-events-none flex items-center justify-between gap-4 select-none">
-        {/* Top-Left: Empty spacer - no button/pill as requested */}
-        <div className="w-8 pointer-events-none" />
-
+      <header className="fixed top-3 right-3 sm:top-4 sm:right-4 z-50 pointer-events-none select-none">
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="pointer-events-auto fixed top-18 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-slate-900/90 text-white font-extrabold text-xs shadow-2xl border border-white/20 flex items-center gap-2 animate-bounce">
+          <div className="pointer-events-auto fixed top-14 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-full bg-slate-900/90 text-white font-extrabold text-xs shadow-2xl border border-white/20 flex items-center gap-2 animate-bounce">
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             <span>{toastMessage}</span>
           </div>
         )}
 
-        {/* Top-Right Pill: Player Stats & Actions */}
-        <div className="pointer-events-auto bg-white/95 backdrop-blur-md text-slate-800 px-4 py-2 rounded-full shadow-xl border border-white/80 flex items-center gap-3 text-xs md:text-sm font-extrabold">
-          {/* Avatar */}
-          <div className="w-7 h-7 rounded-full bg-amber-400 flex items-center justify-center text-amber-950 font-black shadow-inner">
+        {/* Top-Right Compact Pill: Player Actions */}
+        <div className="pointer-events-auto bg-white/95 backdrop-blur-md text-slate-800 px-2.5 py-1 rounded-full shadow-lg border border-white/80 flex items-center gap-2 text-xs sm:text-sm font-extrabold">
+          {/* Avatar Icon */}
+          <div className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-amber-950 font-black text-xs shadow-inner shrink-0">
             ⚡
           </div>
 
-          {/* XP */}
-          <div className="flex items-center gap-1 text-purple-600 font-extrabold">
-            <Award className="w-4 h-4" />
-            <span>{progress.xp} XP</span>
-          </div>
+          <span className="text-[11px] font-black text-indigo-900 pr-1">Студия</span>
 
-          <div className="w-px h-4 bg-slate-200" />
-
-          {/* Coins */}
-          <div className="flex items-center gap-1 text-amber-600 font-black">
-            <span className="w-4 h-4 rounded-full bg-amber-400 text-amber-950 text-[10px] flex items-center justify-center font-black">
-              $
-            </span>
-            <span>{progress.coins}</span>
-          </div>
-
-          <div className="w-px h-4 bg-slate-200" />
+          <div className="w-px h-3.5 bg-slate-200" />
 
           {/* Export / Import Controls */}
           <button
             onClick={handleExport}
-            className="p-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+            className="p-1 rounded-full hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
             title="Сохранить .spark"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
           </button>
 
           <button
             onClick={handleImportClick}
-            className="p-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+            className="p-1 rounded-full hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
             title="Загрузить .spark"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-3.5 h-3.5" />
           </button>
 
           {/* Reset Progress Button - Opens In-App Modal */}
@@ -113,21 +96,10 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
               soundEngine.playPop();
               setShowResetConfirm(true);
             }}
-            className="p-1.5 rounded-full hover:bg-rose-100 text-rose-600 transition-colors"
+            className="p-1 rounded-full hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
             title="Сбросить прогресс"
           >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-
-          <button
-            onClick={() => {
-              soundEngine.playPop();
-              showToast('Spark Studio UI v2.5 • Архипелаг UX');
-            }}
-            className="p-1.5 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-            title="О студии"
-          >
-            <Settings className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
           </button>
 
           <input

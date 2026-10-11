@@ -59,6 +59,62 @@
   animation: rainbow-border 3.5s ease infinite;
 }
 
+/* Kid-Friendly Large Range Slider */
+.kid-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  background: #e0e7ff;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.kid-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #4f46e5;
+  border: 3.5px solid #ffffff;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.45);
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.kid-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+  background: #4338ca;
+}
+
+.kid-slider::-webkit-slider-thumb:active {
+  transform: scale(1.25);
+  background: #3730a3;
+}
+
+.kid-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #4f46e5;
+  border: 3.5px solid #ffffff;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.45);
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.kid-slider::-moz-range-thumb:hover {
+  transform: scale(1.18);
+  background: #4338ca;
+}
+
+.kid-slider::-moz-range-thumb:active {
+  transform: scale(1.25);
+  background: #3730a3;
+}
+
 @keyframes spin-slow {
   from {
     transform: rotate(0deg);

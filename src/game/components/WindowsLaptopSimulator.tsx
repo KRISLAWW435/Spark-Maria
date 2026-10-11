@@ -5,6 +5,9 @@ import { MarieSprite } from './MarieSprite';
 import { SVG_AVATAR_SHAPES } from '../shapes';
 import { CanvasEditor } from './CanvasEditor';
 import { Window } from './Window';
+import { SparkBootScreen } from './SparkBootScreen';
+import { SparkCarDriveButton } from './SparkCarDriveButton';
+import { SparkCharacter } from './SparkCharacter';
 import {
   Mail,
   Folder,
@@ -16,6 +19,7 @@ import {
   Power,
   Wifi,
   Volume2,
+  VolumeX,
   Bell,
   ArrowRight,
   BookOpen,
@@ -37,23 +41,23 @@ import {
   Layers,
 } from 'lucide-react';
 
-import teen3dUnderwaterImg from '../../assets/images/teen_3d_underwater_1790876604765.jpg';
+import teen3dUnderwaterImg from '../../assets/images/teen_3d_underwater_1790968630741.jpg';
 import teenMinecraftVoxelImg from '../../assets/images/teen_minecraft_voxel_1790876619023.jpg';
 import teen2dCosmosImg from '../../assets/images/teen_2d_cosmos_1790876631533.jpg';
 import teen2dFantasyNatureImg from '../../assets/images/teen_2d_fantasy_nature_1790876643358.jpg';
 import teenRetroPixelGameImg from '../../assets/images/teen_retro_pixel_game_1790876655588.jpg';
 import teen3dCyberCityImg from '../../assets/images/teen_3d_cyber_city_1790876667677.jpg';
-import teen3dClayPopImg from '../../assets/images/teen_3d_clay_pop_1790876679237.jpg';
 import teenAnimeLofiSunsetImg from '../../assets/images/teen_anime_lofi_sunset_1790876691833.jpg';
 import teen3dHoloChromeImg from '../../assets/images/teen_3d_holo_chrome_1790876711336.jpg';
 import teenStreetGraffitiImg from '../../assets/images/teen_street_graffiti_1790876723775.jpg';
+import { PosterDesign, StickersDesign } from '../types';
 import teenPixelRpgQuestImg from '../../assets/images/teen_pixel_rpg_quest_1790876735551.jpg';
 import teen3dCyberPetImg from '../../assets/images/teen_3d_cyber_pet_1790876747793.jpg';
 
 interface WindowsLaptopSimulatorProps {
   isOpen: boolean;
   onClose: () => void;
-  onStartMarieLevel: () => void;
+  onStartMarieLevel: (orderNumber?: 1 | 2 | 3) => void;
   progress: PlayerProgress;
   onOpenPortfolio?: () => void;
   studio?: StudioData;
@@ -61,6 +65,11 @@ interface WindowsLaptopSimulatorProps {
   currentDesign?: SignDesign;
   onTestDesign?: (design: SignDesign) => void;
   versionNumber?: number;
+  posterDesign?: PosterDesign | null;
+  stickersDesign?: StickersDesign | null;
+  onTestPoster?: (design: PosterDesign) => void;
+  onTestStickers?: (design: StickersDesign) => void;
+  activeOrder?: 1 | 2 | 3;
 }
 
 export type AppId = 'mail' | 'portfolio' | 'settings' | 'book' | 'canvas';
@@ -135,14 +144,6 @@ export const THEME_PRESETS: ThemePreset[] = [
     accent: '#00f5d4',
     desc: 'Футуристичные улицы, голограммы и летающие спидеры',
     emoji: '🏙️',
-  },
-  {
-    id: '3d_clay_pop',
-    name: '3D Поп-Арт & Сникеры',
-    wallpaper: teen3dClayPopImg,
-    accent: '#ff5400',
-    desc: 'Глянцевый виниловый 3D мир, сникеры и смайлы',
-    emoji: '👟',
   },
   {
     id: 'anime_lofi_sunset',
@@ -220,8 +221,15 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   currentDesign,
   onTestDesign,
   versionNumber = 1,
+  posterDesign,
+  stickersDesign,
+  onTestPoster,
+  onTestStickers,
+  activeOrder = 1,
 }) => {
-  const [selectedEmailId, setSelectedEmailId] = useState<string>('marie_order');
+  const [selectedEmailId, setSelectedEmailId] = useState<string>(
+    activeOrder === 2 ? 'marie_order_2' : activeOrder === 3 ? 'marie_order_3' : 'marie_order_1'
+  );
   const [currentTime, setCurrentTime] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>('');
   const [isStartMenuOpen, setIsStartMenuOpen] = useState(false);
@@ -235,12 +243,19 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   // Booting animation state
   const [isBooting, setIsBooting] = useState<boolean>(true);
   const [bootStep, setBootStep] = useState<number>(1);
+  const [isMuted, setIsMuted] = useState<boolean>(() => soundEngine.isMuted());
+
+  useEffect(() => {
+    return soundEngine.subscribeMute((muted) => {
+      setIsMuted(muted);
+    });
+  }, []);
 
   // Wallpaper state with persistence
   const [currentWallpaper, setCurrentWallpaper] = useState<string>(() => {
     try {
       const saved = localStorage.getItem(WALLPAPER_STORAGE_KEY);
-      if (saved) return saved;
+      if (saved && !saved.includes('1790876604765')) return saved;
     } catch {
       // ignore
     }
@@ -273,6 +288,19 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
 
   const wallpaperFileInputRef = useRef<HTMLInputElement>(null);
   const desktopRef = useRef<HTMLDivElement>(null);
+
+  const [isLaunchingTrip, setIsLaunchingTrip] = useState<boolean>(false);
+
+  const handleLaunchMarieLevel = (orderNum: 1 | 2 | 3) => {
+    if (isLaunchingTrip) return;
+    setIsLaunchingTrip(true);
+    soundEngine.playSuccess();
+    onClose();
+    onStartMarieLevel(orderNum);
+    setTimeout(() => {
+      setIsLaunchingTrip(false);
+    }, 1200);
+  };
 
   const isBakeryCompleted = progress.completedModules.includes('bakery_marie');
 
@@ -342,7 +370,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
 
   // Window Management Actions
   const openApp = (id: AppId) => {
-    soundEngine.playPop();
+    soundEngine.playOpenWindow();
     setMaxZIndex((prev) => {
       const nextZ = prev + 1;
       setWindows((prevWin) => ({
@@ -360,6 +388,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   };
 
   const focusApp = (id: AppId) => {
+    soundEngine.playOsClick();
     setMaxZIndex((prev) => {
       const nextZ = prev + 1;
       setWindows((prevWin) => ({
@@ -376,7 +405,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   };
 
   const minimizeApp = (id: AppId) => {
-    soundEngine.playPop();
+    soundEngine.playCloseWindow();
     setWindows((prevWin) => {
       const updated = {
         ...prevWin,
@@ -397,7 +426,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   };
 
   const toggleMaximizeApp = (id: AppId) => {
-    soundEngine.playPop();
+    soundEngine.playOsClick();
     setWindows((prevWin) => ({
       ...prevWin,
       [id]: {
@@ -409,7 +438,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   };
 
   const closeApp = (id: AppId) => {
-    soundEngine.playClick();
+    soundEngine.playCloseWindow();
     setWindows((prevWin) => {
       const updated = {
         ...prevWin,
@@ -432,7 +461,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   };
 
   const handleDockIconClick = (id: AppId) => {
-    soundEngine.playClick();
+    soundEngine.playOsClick();
     setIsStartMenuOpen(false);
     const win = windows[id];
 
@@ -448,7 +477,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   };
 
   const minimizeAll = () => {
-    soundEngine.playClick();
+    soundEngine.playCloseWindow();
     setWindows((prev) => {
       const updated = { ...prev };
       for (const key in updated) {
@@ -606,81 +635,67 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn select-none">
-      {/* LAPTOP OUTER SHASSIS FRAME */}
-      <div className="relative w-full max-w-6xl h-[92vh] max-h-[820px] bg-[#1a1d24] rounded-[28px] sm:rounded-[36px] p-3 sm:p-5 shadow-[0_30px_90px_rgba(0,0,0,0.9),0_0_0_2px_rgba(255,255,255,0.08)] flex flex-col overflow-hidden border border-slate-700/60">
-        
-        {/* TOP SCREEN BEZEL & WEBCAM */}
-        <div className="h-5 sm:h-6 flex items-center justify-between px-6 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-slate-700" />
-            <span className="w-2 h-2 rounded-full bg-slate-700" />
-          </div>
-
-          <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-0.5 rounded-full border border-slate-700/60">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase">
-              HD CAMERA
+    <div className="fixed inset-0 z-50 bg-[#0a0d14] flex flex-col w-screen h-screen overflow-hidden select-none animate-fadeIn">
+      {/* TOP SYSTEM STATUS BAR (SPARK OS STATUS BAR) */}
+      <div className="h-8 sm:h-9 bg-slate-950/95 backdrop-blur-md border-b border-white/10 px-3 sm:px-5 flex items-center justify-between z-30 shrink-0 select-none shadow-md">
+        {/* Left: Spark OS Brand & Mode */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 font-black text-xs sm:text-sm text-white tracking-wide">
+            <span
+              style={{ backgroundColor: accentColor }}
+              className="w-5 h-5 rounded-lg flex items-center justify-center text-xs shadow-sm font-black"
+            >
+              ⚡
+            </span>
+            <span className="font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-200">
+              SPARK PRO
             </span>
           </div>
-
-          <button
-            onClick={() => {
-              soundEngine.playClick();
-              onClose();
-            }}
-            className="text-xs font-extrabold text-slate-400 hover:text-white px-3 py-0.5 rounded-full bg-slate-800/80 hover:bg-rose-600 transition-colors cursor-pointer flex items-center gap-1.5"
-            title="Закрыть ноутбук"
-          >
-            <span>Закрыть</span>
-            <X className="w-3.5 h-3.5" />
-          </button>
+          <span className="hidden sm:inline text-[11px] font-semibold text-slate-400 border-l border-white/10 pl-3">
+            Рабочий стол студии
+          </span>
         </div>
 
-        {/* SCREEN DISPLAY AREA */}
-        <div
-          style={{
-            backgroundImage: `url('${currentWallpaper}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-          className="relative flex-1 rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col border border-slate-800/80 shadow-inner"
-        >
-          {/* BOOTING SCREEN OVERLAY */}
-          {isBooting && (
-            <div className="absolute inset-0 z-50 bg-[#0d1117] flex flex-col items-center justify-center p-6 text-white text-center animate-fadeIn">
-              <div className="mb-8 flex flex-col items-center gap-3">
-                <div
-                  style={{ backgroundColor: accentColor }}
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl flex items-center justify-center text-3xl sm:text-4xl shadow-[0_0_35px_rgba(99,102,241,0.6)] animate-pulse"
-                >
-                  ⚡
-                </div>
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-2">
-                  Spark OS v10.4
-                </h3>
-                <p className="text-xs text-slate-400 font-medium">
-                  Загрузка модулей студии и шрифтов...
-                </p>
-              </div>
+        {/* Center: Live Time / Active System Status */}
+        <div className="hidden md:flex items-center gap-2 text-xs font-bold text-slate-300 bg-white/5 px-3 py-0.5 rounded-full border border-white/10">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Система активна</span>
+          <span className="text-slate-500">•</span>
+          <span className="text-indigo-300 font-extrabold">{currentTime || '15:30'}</span>
+        </div>
 
-              <div className="w-64 sm:w-80 h-2 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/10 shadow-inner">
-                <div
-                  className="rainbow-neon-border h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_12px_rgba(236,72,153,0.8)]"
-                  style={{
-                    width: bootStep === 1 ? '35%' : bootStep === 2 ? '78%' : '100%',
-                  }}
-                />
-              </div>
+        {/* Right: Prominent Close Button */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={() => {
+              soundEngine.playLaptopClose();
+              onClose();
+            }}
+            className="text-xs font-black text-white hover:text-white px-3.5 py-1 rounded-full bg-rose-600 hover:bg-rose-500 active:bg-rose-700 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5 shadow-md border border-rose-400/50"
+            title="Закрыть ноутбук и вернуться в студию"
+          >
+            <span>Закрыть ноутбук</span>
+            <X className="w-3.5 h-3.5 stroke-[2.5]" />
+          </button>
+        </div>
+      </div>
 
-              <button
-                onClick={() => setIsBooting(false)}
-                className="absolute bottom-5 right-5 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-xs font-bold transition-colors cursor-pointer"
-              >
-                Войти в систему ➔
-              </button>
-            </div>
-          )}
+      {/* SCREEN DISPLAY AREA (100% Fullscreen between top bar and dock) */}
+      <div
+        style={{
+          backgroundImage: `url('${currentWallpaper}')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+        className="relative flex-1 overflow-hidden flex flex-col"
+      >
+        {/* BOOTING SCREEN OVERLAY */}
+        {isBooting && (
+          <SparkBootScreen
+            accentColor={accentColor}
+            onComplete={() => setIsBooting(false)}
+          />
+        )}
 
           {/* DESKTOP WORKSPACE CONSTRAINED BOUNDS AREA */}
           <div
@@ -819,12 +834,12 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
             >
               <CanvasEditor
                 initialDesign={currentDesign || {
-                  text: 'Кондитерская Мари',
+                  text: 'Пекарня Мари',
                   subtext: 'Свежая выпечка каждый день',
                   fontSize: 28,
                   fontStyle: 'sweet',
-                  shape: 'rounded',
-                  icon: 'cupcake',
+                  shape: 'rectangle',
+                  icon: 'icon1',
                   iconSize: 48,
                   bgColor: '#FEF3C7',
                   textColor: '#2A1B12',
@@ -833,6 +848,8 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                   signHeight: 120,
                   posX: 0,
                   posY: 0,
+                  background: '#FEF3C7',
+                  font: 'sweet',
                 }}
                 onTestDesign={(design) => {
                   soundEngine.playTestStart();
@@ -841,6 +858,19 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                 }}
                 versionNumber={versionNumber || 1}
                 isWindowMode={true}
+                orderNumber={activeOrder || 1}
+                posterDesign={posterDesign || progress.mariaOrders?.posterDesign}
+                stickersDesign={stickersDesign || progress.mariaOrders?.stickersDesign}
+                onTestPoster={(poster) => {
+                  soundEngine.playTestStart();
+                  onClose();
+                  onTestPoster?.(poster);
+                }}
+                onTestStickers={(stickers) => {
+                  soundEngine.playTestStart();
+                  onClose();
+                  onTestStickers?.(stickers);
+                }}
               />
             </Window>
 
@@ -867,115 +897,350 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                 <div className="flex-1 flex overflow-hidden">
                   <div className="w-64 sm:w-72 border-r border-slate-200 bg-[#fbfbfb] overflow-y-auto p-2 space-y-1.5 shrink-0">
                     <div className="px-2 py-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                      Входящие ({isBakeryCompleted ? '2' : '1'})
+                      Входящие ({1 + (progress.mariaOrders?.order1 === 'completed' ? 1 : 0) + (progress.mariaOrders?.order2 === 'completed' ? 1 : 0)})
                     </div>
 
+                    {/* Spark Hint Bubble */}
+                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border border-indigo-200/80 shadow-xs flex items-center gap-2.5 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center text-sm shadow-xs shrink-0 text-white">
+                        ⚡
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-900">
+                          Спарк подсказывает
+                        </div>
+                        <div className="text-xs font-black text-slate-800 leading-tight">
+                          Нажми на письмо, чтобы прочитать.
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Email 1: Вывеска (всегда доступно с начала игры) */}
                     <div
                       onClick={() => {
                         soundEngine.playClick();
-                        setSelectedEmailId('marie_order');
+                        setSelectedEmailId('marie_order_1');
                       }}
-                      className={`p-3 rounded-xl cursor-pointer transition-all border ${
-                        selectedEmailId === 'marie_order'
+                      className={`p-2.5 rounded-xl cursor-pointer transition-all border ${
+                        selectedEmailId === 'marie_order_1'
                           ? 'bg-amber-50 border-amber-300 shadow-sm'
                           : 'bg-white border-slate-200 hover:bg-slate-50'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-extrabold text-xs text-slate-900 flex items-center gap-1.5">
-                          <span>🥐</span>
-                          <span>Мари (Кондитер)</span>
-                        </span>
-                        {!isBakeryCompleted && (
-                          <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white font-black text-[10px] animate-pulse">
-                            СРОЧНО
+                      <div className="flex items-center gap-2 mb-1">
+                        <img
+                          src="/assets/portraits/portrait_Mari.webp"
+                          alt="Мария"
+                          className="w-8 h-8 rounded-lg object-cover border border-amber-300 shrink-0 shadow-xs"
+                        />
+                        <div className="flex-1 flex items-center justify-between min-w-0">
+                          <span className="font-extrabold text-xs text-slate-900 truncate">
+                            Мария • Заказ №1
                           </span>
-                        )}
+                          <span className={`px-2 py-0.5 rounded-full font-black text-[9px] shrink-0 ${
+                            progress.mariaOrders?.order1 === 'completed'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-rose-500 text-white animate-pulse'
+                          }`}>
+                            {progress.mariaOrders?.order1 === 'completed' ? 'ГОТОВО' : 'СРОЧНО'}
+                          </span>
+                        </div>
                       </div>
                       <div className="font-bold text-xs text-slate-800 line-clamp-1">
-                        Спасите мою кондитерскую!
+                        SOS! Нас никто не замечает!
                       </div>
                       <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                        Прохожие пройдут мимо, если нет вывески...
+                        Помоги сделать вывеску для пекарни...
                       </div>
                     </div>
 
-                    <div
-                      onClick={() => {
-                        soundEngine.playClick();
-                        setSelectedEmailId('spark_welcome');
-                      }}
-                      className={`p-3 rounded-xl cursor-pointer transition-all border ${
-                        selectedEmailId === 'spark_welcome'
-                          ? 'bg-amber-50 border-amber-300 shadow-sm'
-                          : 'bg-white border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                          <span>⚡</span>
-                          <span>Спарк</span>
-                        </span>
-                        <span className="text-[10px] text-slate-400">Вчера</span>
-                      </div>
-                      <div className="font-bold text-xs text-slate-800 line-clamp-1">
-                        Добро пожаловать в студию!
-                      </div>
-                      <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                        Уроки дизайна, правила и вдохновение.
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 p-5 overflow-y-auto bg-white">
-                    {selectedEmailId === 'marie_order' && (
-                      <div className="space-y-4">
-                        <div className="flex items-start gap-4 border-b border-slate-200 pb-4">
-                          <MarieSprite emotion="worried" size="md" />
-                          <div>
-                            <h3 className="font-extrabold text-base text-slate-900">
-                              Мари • Владелица уютной кондитерской
-                            </h3>
-                            <p className="text-xs text-slate-500">marie@sweet-bakery.city</p>
-                            <span className="inline-block mt-2 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
-                              Заказ: Разработка секретной вывески
+                    {/* Email 2: Афиша (появляется только после завершения заказа №1) */}
+                    {progress.mariaOrders?.order1 === 'completed' && (
+                      <div
+                        onClick={() => {
+                          soundEngine.playClick();
+                          setSelectedEmailId('marie_order_2');
+                        }}
+                        className={`p-2.5 rounded-xl cursor-pointer transition-all border ${
+                          selectedEmailId === 'marie_order_2'
+                            ? 'bg-amber-50 border-amber-300 shadow-sm'
+                            : 'bg-white border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <img
+                            src="/assets/portraits/portrait_Mari.webp"
+                            alt="Мария"
+                            className="w-8 h-8 rounded-lg object-cover border border-amber-300 shrink-0 shadow-xs"
+                          />
+                          <div className="flex-1 flex items-center justify-between min-w-0">
+                            <span className="font-extrabold text-xs text-slate-900 truncate">
+                              Мария • Заказ №2
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full font-black text-[9px] shrink-0 ${
+                              progress.mariaOrders?.order2 === 'completed'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-amber-500 text-slate-950 font-black'
+                            }`}>
+                              {progress.mariaOrders?.order2 === 'completed' ? 'ГОТОВО' : 'НОВОЕ'}
                             </span>
                           </div>
                         </div>
+                        <div className="font-bold text-xs text-slate-800 line-clamp-1">
+                          Вывеска работает! Но что внутри?
+                        </div>
+                        <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                          Сделай афишу с эклерами...
+                        </div>
+                      </div>
+                    )}
 
-                        <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3">
-                          <p>
-                            Привет! Я открыла самую уютную кондитерскую в городе, но у меня большая беда: прохожие не видят моё заведение и проходят мимо! 😭
-                          </p>
-                          <p>
-                            Мне очень нужна вывеска, которую видно издалека! Спарк сказал, что ты лучшая студия дизайна в городе.
-                          </p>
+                    {/* Email 3: Наклейки (появляется только после завершения заказа №2) */}
+                    {progress.mariaOrders?.order2 === 'completed' && (
+                      <div
+                        onClick={() => {
+                          soundEngine.playClick();
+                          setSelectedEmailId('marie_order_3');
+                        }}
+                        className={`p-2.5 rounded-xl cursor-pointer transition-all border ${
+                          selectedEmailId === 'marie_order_3'
+                            ? 'bg-amber-50 border-amber-300 shadow-sm'
+                            : 'bg-white border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <img
+                            src="/assets/portraits/portrait_Mari.webp"
+                            alt="Мария"
+                            className="w-8 h-8 rounded-lg object-cover border border-amber-300 shrink-0 shadow-xs"
+                          />
+                          <div className="flex-1 flex items-center justify-between min-w-0">
+                            <span className="font-extrabold text-xs text-slate-900 truncate">
+                              Мария • Заказ №3
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full font-black text-[9px] shrink-0 ${
+                              progress.mariaOrders?.order3 === 'completed'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-purple-500 text-white font-black'
+                            }`}>
+                              {progress.mariaOrders?.order3 === 'completed' ? 'ГОТОВО' : 'ФИНАЛ'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="font-bold text-xs text-slate-800 line-clamp-1">
+                          Финал! Самая красивая витрина!
+                        </div>
+                        <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                          Укрась окна и дверь наклейками...
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 p-6 overflow-hidden flex flex-col justify-between bg-white">
+                    {/* EMAIL 1 DETAIL */}
+                    {selectedEmailId === 'marie_order_1' && (
+                      <div className="h-full flex flex-col justify-between">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                            <div className="flex items-center gap-4">
+                              <img
+                                src="/assets/portraits/portrait_Mari.webp"
+                                alt="Мария"
+                                className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-300 shadow-md shrink-0"
+                              />
+                              <div>
+                                <h3 className="font-black text-lg text-slate-900">
+                                  Мария • Владелица пекарни
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium">maria@sweet-bakery.city</p>
+                                <span className="inline-block mt-1 px-3 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
+                                  Тема: «SOS! Нас никто не замечает!»
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Spark Assistant in corner */}
+                            <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 via-indigo-50 to-pink-50 border border-purple-200/80 px-2.5 py-1 rounded-2xl shadow-xs shrink-0">
+                              <SparkCharacter
+                                size="small"
+                                interactive={false}
+                                idleNudge={true}
+                                idleTimeoutMs={20000}
+                                title="Спарк"
+                              />
+                              <div className="hidden sm:block text-right">
+                                <div className="text-[10px] font-black uppercase text-purple-700 tracking-wider">
+                                  Спарк
+                                </div>
+                                <div className="text-xs font-bold text-slate-700">
+                                  Читаем заказ
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-slate-800 text-base leading-relaxed bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80">
+                            <p className="font-bold text-slate-900">
+                              «Привет! Я открыла пекарню, но люди проходят мимо. Помоги!»
+                            </p>
+                          </div>
                         </div>
 
-                        <div className="pt-2">
-                          <button
-                            onClick={() => {
-                              soundEngine.playSuccess();
-                              onClose();
-                              onStartMarieLevel();
-                            }}
-                            className={`w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-sm shadow-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                              emailNudgeActive ? 'ring-4 ring-amber-300 animate-bounce' : ''
-                            }`}
-                          >
-                            <span>Поехать к Мари и изучить улицу</span>
-                            <ArrowRight className="w-4 h-4 stroke-[3]" />
-                          </button>
+                        <div className="pt-2 border-t border-slate-100 flex justify-center">
+                          <SparkCarDriveButton
+                            onClick={() => handleLaunchMarieLevel(1)}
+                            disabled={isLaunchingTrip}
+                            nudgeActive={emailNudgeActive}
+                            theme="amber"
+                            label="Поехать к Мари"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* EMAIL 2 DETAIL */}
+                    {selectedEmailId === 'marie_order_2' && (
+                      <div className="h-full flex flex-col justify-between">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                            <div className="flex items-center gap-4">
+                              <img
+                                src="/assets/portraits/portrait_Mari.webp"
+                                alt="Мария"
+                                className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-300 shadow-md shrink-0"
+                              />
+                              <div>
+                                <h3 className="font-black text-lg text-slate-900">
+                                  Мария • Владелица пекарни
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium">maria@sweet-bakery.city</p>
+                                <span className="inline-block mt-1 px-3 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">
+                                  Тема: «Вывеска работает! Но что внутри?»
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Spark Assistant in corner */}
+                            <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 via-indigo-50 to-pink-50 border border-purple-200/80 px-2.5 py-1 rounded-2xl shadow-xs shrink-0">
+                              <SparkCharacter
+                                size="small"
+                                interactive={false}
+                                idleNudge={true}
+                                idleTimeoutMs={20000}
+                                title="Спарк"
+                              />
+                              <div className="hidden sm:block text-right">
+                                <div className="text-[10px] font-black uppercase text-purple-700 tracking-wider">
+                                  Спарк
+                                </div>
+                                <div className="text-xs font-bold text-slate-700">
+                                  Читаем заказ
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-slate-800 text-base leading-relaxed bg-amber-50/60 p-4 rounded-2xl border border-amber-200/80">
+                            <p className="font-bold text-slate-900">
+                              «Ура! Теперь меня замечают. Но не все знают, что у нас есть. Сделай афишу с эклерами!»
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 flex justify-center">
+                          {progress.mariaOrders?.order1 !== 'completed' ? (
+                            <div className="w-full p-4 rounded-2xl bg-slate-100 border border-slate-300 text-center text-slate-500 text-sm font-bold">
+                              🔒 Заказ откроется после того, как будет завершен Заказ №1 (Вывеска)
+                            </div>
+                          ) : (
+                            <SparkCarDriveButton
+                              onClick={() => handleLaunchMarieLevel(2)}
+                              disabled={isLaunchingTrip}
+                              theme="purple"
+                              label="Поехать к Мари"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* EMAIL 3 DETAIL */}
+                    {selectedEmailId === 'marie_order_3' && (
+                      <div className="h-full flex flex-col justify-between">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                            <div className="flex items-center gap-4">
+                              <img
+                                src="/assets/portraits/portrait_Mari.webp"
+                                alt="Мария"
+                                className="w-14 h-14 rounded-2xl object-cover border-2 border-pink-300 shadow-md shrink-0"
+                              />
+                              <div>
+                                <h3 className="font-black text-lg text-slate-900">
+                                  Мария • Владелица пекарни
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium">maria@sweet-bakery.city</p>
+                                <span className="inline-block mt-1 px-3 py-0.5 rounded-full bg-rose-100 text-rose-900 text-xs font-bold">
+                                  Тема: «Финал! Самая красивая витрина!»
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Spark Assistant in corner */}
+                            <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 via-indigo-50 to-pink-50 border border-purple-200/80 px-2.5 py-1 rounded-2xl shadow-xs shrink-0">
+                              <SparkCharacter
+                                size="small"
+                                interactive={false}
+                                idleNudge={true}
+                                idleTimeoutMs={20000}
+                                title="Спарк"
+                              />
+                              <div className="hidden sm:block text-right">
+                                <div className="text-[10px] font-black uppercase text-purple-700 tracking-wider">
+                                  Спарк
+                                </div>
+                                <div className="text-xs font-bold text-slate-700">
+                                  Читаем заказ
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-slate-800 text-base leading-relaxed bg-pink-50/60 p-4 rounded-2xl border border-pink-200/80">
+                            <p className="font-bold text-slate-900">
+                              «Ты настоящий спаситель! Остался последний штрих. Укрась окна и дверь наклейками!»
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 flex justify-center">
+                          {progress.mariaOrders?.order2 !== 'completed' ? (
+                            <div className="w-full p-4 rounded-2xl bg-slate-100 border border-slate-300 text-center text-slate-500 text-sm font-bold">
+                              🔒 Финальный заказ откроется после выполнения Заказа №2 (Афиша)
+                            </div>
+                          ) : (
+                            <SparkCarDriveButton
+                              onClick={() => handleLaunchMarieLevel(3)}
+                              disabled={isLaunchingTrip}
+                              theme="rose"
+                              label="Поехать к Мари"
+                            />
+                          )}
                         </div>
                       </div>
                     )}
 
                     {selectedEmailId === 'spark_welcome' && (
                       <div className="space-y-4">
-                        <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
-                          <div className="w-12 h-12 rounded-full bg-amber-400 flex items-center justify-center text-2xl shadow-sm">
-                            ⚡
-                          </div>
+                        <div className="flex items-center gap-4 border-b border-slate-200 pb-4">
+                          <SparkCharacter
+                            size="small"
+                            interactive={false}
+                            idleNudge={true}
+                            idleTimeoutMs={20000}
+                            title="Спарк"
+                          />
                           <div>
                             <h3 className="font-bold text-base text-slate-900">
                               Спарк • Главный наставник
@@ -1246,28 +1511,12 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
               onFocus={() => focusApp('portfolio')}
               boundsRef={desktopRef}
             >
-              <div className="w-full h-full p-6 overflow-y-auto bg-white">
-                {progress.portfolio ? (
-                  <div className="max-w-xl mx-auto p-5 rounded-2xl bg-amber-50/90 border border-amber-200 shadow-sm space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-amber-900">
-                        {progress.portfolio.title}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
-                        Завершено
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600">
-                      {progress.portfolio.task}
-                    </p>
-                    <div className="flex items-center gap-4 text-xs font-bold text-slate-700 bg-white p-3 rounded-xl border border-amber-100">
-                      <div>
-                        Было замечено: <span className="text-rose-600">{progress.portfolio.beforeNoticed}</span>
-                      </div>
-                      <div>➔</div>
-                      <div>
-                        Стало: <span className="text-emerald-600 text-sm font-black">{progress.portfolio.afterNoticed}</span> из 10
-                      </div>
+              <div className="w-full h-full p-6 overflow-y-auto bg-slate-50">
+                <div className="max-w-2xl mx-auto space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <div>
+                      <h3 className="font-black text-lg text-slate-900">Портфолио Дизайн-Студии</h3>
+                      <p className="text-xs text-slate-500">Все выполненные работы для пекарни Мари</p>
                     </div>
                     {onOpenPortfolio && (
                       <button
@@ -1276,25 +1525,92 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                           onClose();
                           onOpenPortfolio();
                         }}
-                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                       >
-                        Открыть полный кейс
+                        <span>Во весь экран</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500">
-                    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-3xl mb-3">
-                      📁
+
+                  {/* 3 Order Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Card 1: Вывеска */}
+                    <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black uppercase text-amber-600">Заказ #1</span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                            progress.mariaOrders?.order1 === 'completed'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {progress.mariaOrders?.order1 === 'completed' ? 'Готово' : 'В работе'}
+                          </span>
+                        </div>
+                        <h4 className="font-black text-xs text-slate-900">Вывеска Мари</h4>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Контрастная прямоугольная вывеска</p>
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-slate-100 text-center text-xs">
+                        {progress.mariaOrders?.signDesign ? '✅ Вывеска создана' : '⏳ Ожидает создания'}
+                      </div>
                     </div>
-                    <h4 className="font-bold text-base text-slate-800 mb-1">
-                      Папка «Портфолио» пуста
-                    </h4>
-                    <p className="text-xs text-slate-500 max-w-sm">
-                      Откройте почту или Холст дизайна, чтобы разработать первую вывеску!
-                    </p>
+
+                    {/* Card 2: Афиша */}
+                    <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black uppercase text-purple-600">Заказ #2</span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                            progress.mariaOrders?.order2 === 'completed'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : progress.mariaOrders?.order1 === 'completed'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-slate-100 text-slate-400'
+                          }`}>
+                            {progress.mariaOrders?.order2 === 'completed'
+                              ? 'Готово'
+                              : progress.mariaOrders?.order1 === 'completed'
+                              ? 'Доступно'
+                              : 'Замок'}
+                          </span>
+                        </div>
+                        <h4 className="font-black text-xs text-slate-900">Афиша Мари</h4>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Вертикальный плакат 2:3 с эклерами</p>
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-slate-100 text-center text-xs">
+                        {progress.mariaOrders?.posterDesign ? '✅ Афиша создана' : progress.mariaOrders?.order1 === 'completed' ? '⏳ Готово к запуску' : '🔒 Заблокировано'}
+                      </div>
+                    </div>
+
+                    {/* Card 3: Наклейки */}
+                    <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black uppercase text-rose-600">Заказ #3</span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                            progress.mariaOrders?.order3 === 'completed'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : progress.mariaOrders?.order2 === 'completed'
+                              ? 'bg-rose-100 text-rose-800'
+                              : 'bg-slate-100 text-slate-400'
+                          }`}>
+                            {progress.mariaOrders?.order3 === 'completed'
+                              ? 'Готово'
+                              : progress.mariaOrders?.order2 === 'completed'
+                              ? 'Финал'
+                              : 'Замок'}
+                          </span>
+                        </div>
+                        <h4 className="font-black text-xs text-slate-900">Витрина и дверь</h4>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Украшение окон и двери наклейками</p>
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-slate-100 text-center text-xs">
+                        {progress.mariaOrders?.stickersDesign ? '✅ Витрина украшена' : progress.mariaOrders?.order2 === 'completed' ? '⏳ Готово к запуску' : '🔒 Заблокировано'}
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </Window>
 
@@ -1458,6 +1774,38 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                   </div>
                 </div>
 
+                {/* Section 4: OS Sound Settings */}
+                <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+                      !isMuted ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      {!isMuted ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <div className="font-black text-sm text-slate-900">Звуки операционной системы</div>
+                      <div className="text-xs text-slate-500">
+                        Мягкие звуки кликов, открытия и закрытия окон, почты
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextMuted = soundEngine.toggleMute();
+                      setIsMuted(nextMuted);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer shadow-xs flex items-center gap-2 ${
+                      !isMuted
+                        ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200'
+                        : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                    }`}
+                  >
+                    <span>{!isMuted ? 'Включены' : 'Выключены'}</span>
+                  </button>
+                </div>
+
                 {/* Custom Wallpaper Upload */}
                 <div className="pt-4 border-t border-slate-200 flex items-center gap-4">
                   <button
@@ -1550,7 +1898,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      soundEngine.playClick();
+                      soundEngine.playLaptopClose();
                       setIsStartMenuOpen(false);
                       onClose();
                     }}
@@ -1676,32 +2024,29 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
           {/* DOCK / TASKBAR (5 APPS + SYSTEM TRAY) */}
           <div className="h-12 sm:h-14 bg-[#10141d]/90 backdrop-blur-xl border-t border-white/15 flex items-center justify-between px-2 sm:px-4 z-40 select-none shrink-0">
             <div className="flex items-center h-full gap-1 sm:gap-2">
-              {/* Start Button (Пуск) */}
+              {/* Start Button (Пуск) - 4 разноцветных кружочка (2x2) */}
               <button
                 onClick={() => {
                   soundEngine.playPop();
                   setIsStartMenuOpen(!isStartMenuOpen);
                 }}
-                style={{
-                  backgroundColor: isStartMenuOpen ? accentColor : undefined,
-                }}
-                className={`h-10 sm:h-11 px-3 sm:px-4 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                  isStartMenuOpen ? 'text-white shadow-lg' : 'hover:bg-white/10 text-slate-300'
+                className={`h-10 sm:h-11 px-3 sm:px-4 rounded-xl flex items-center justify-center transition-transform duration-200 hover:scale-110 active:scale-95 cursor-pointer ${
+                  isStartMenuOpen ? 'bg-white/20 shadow-lg ring-2 ring-white/30' : 'hover:bg-white/10'
                 }`}
-                title="Пуск (Все приложения)"
+                title="Пуск"
               >
-                <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
-                  <span className="bg-current rounded-[1px]" />
-                  <span className="bg-current rounded-[1px]" />
-                  <span className="bg-current rounded-[1px]" />
-                  <span className="bg-current rounded-[1px]" />
+                <div className="grid grid-cols-2 gap-1.5 w-4 h-4 items-center justify-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7] shadow-xs" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#22D3EE] shadow-xs" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#C4FF3D] shadow-xs" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#FCD34D] shadow-xs" />
                 </div>
               </button>
 
-              {/* Taskbar Search Input */}
-              <div className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-xl border border-white/10 text-xs text-slate-300 w-44 transition-colors">
-                <Search className="w-3.5 h-3.5 text-slate-400" />
-                <span className="truncate">Поиск программ...</span>
+              {/* Taskbar Search Static Field (No hover/interactive button animation) */}
+              <div className="hidden md:flex items-center gap-2 bg-white/[0.06] px-3 py-1.5 rounded-xl border border-white/10 text-xs text-slate-400 w-44 select-none cursor-default">
+                <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate text-slate-400 font-medium">Поиск программ...</span>
               </div>
 
               {/* TASKBAR DOCK APPS (All 5 Apps) */}
@@ -1809,9 +2154,35 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
 
             {/* Right: System Tray & Clock */}
             <div className="flex items-center h-full text-white text-xs sm:text-sm">
-              <div className="flex items-center gap-3 px-3 h-full cursor-default text-slate-300">
-                <Wifi className="w-4 h-4 sm:w-5 sm:h-5" />
-                <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className="flex items-center gap-2 px-2 h-full text-slate-300">
+                <div className="p-1.5 cursor-default text-slate-400" title="Wi-Fi: Подключено (SparkNet)">
+                  <Wifi className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                
+                {/* OS Sound Mute/Unmute Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextMuted = soundEngine.toggleMute();
+                    setIsMuted(nextMuted);
+                  }}
+                  className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center ${
+                    isMuted
+                      ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+                      : 'hover:bg-white/15 text-slate-300 hover:text-white'
+                  }`}
+                  title={
+                    isMuted
+                      ? 'Звук системы: Выключен (нажми, чтобы включить)'
+                      : 'Звук системы: Включен (нажми, чтобы выключить)'
+                  }
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-rose-400" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                </button>
               </div>
 
               <div className="px-3 h-full flex items-center cursor-default font-bold text-slate-300">
@@ -1840,31 +2211,6 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
             </div>
           </div>
         </div>
-
-        {/* BOTTOM METALLIC CHASSIS CHIN */}
-        <div className="h-3.5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border-t border-white/10 flex items-center justify-between px-6 mt-1 text-[8px] text-slate-500 font-bold select-none shrink-0">
-          <div className="flex items-center gap-1 opacity-40">
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-          </div>
-
-          <span className="tracking-widest uppercase text-slate-400/70 font-black text-[8px]">
-            SPARK PRO RETINA DISPLAY 120Hz
-          </span>
-
-          <div className="flex items-center gap-1 opacity-40">
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-            <span className="w-1 h-1 rounded-full bg-slate-400" />
-          </div>
-        </div>
-
       </div>
-    </div>
   );
 };
