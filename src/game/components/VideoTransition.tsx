@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { assetPreloader } from '../engine/AssetPreloader';
+import { getAssetUrl } from '../types';
 
 interface VideoTransitionProps {
   src?: string;
@@ -9,7 +10,7 @@ interface VideoTransitionProps {
 }
 
 export const VideoTransition: React.FC<VideoTransitionProps> = ({
-  src = './assets/avatars/videos/transition-drive-to-client.webm',
+  src = getAssetUrl('/assets/avatars/videos/transition-drive-to-client.webm'),
   onCovered,
   onComplete,
 }) => {
@@ -18,7 +19,7 @@ export const VideoTransition: React.FC<VideoTransitionProps> = ({
   const isFinishedRef = useRef(false);
   const isCoveredRef = useRef(false);
   const lastProgressTimeRef = useRef(Date.now());
-  const effectiveSrc = assetPreloader.getVideoUrl(src);
+  const effectiveSrc = assetPreloader.getVideoUrl(getAssetUrl(src));
 
   // Notify parent that screen is completely covered so destination scene mounts underneath
   const triggerCovered = useCallback(() => {

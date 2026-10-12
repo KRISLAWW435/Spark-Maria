@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getAssetUrl } from '../types';
 
 export type SparkState = 'idle' | 'active';
 export type SparkSize = 'small' | 'medium' | 'large' | number | string;
@@ -14,8 +15,8 @@ export interface SparkCharacterProps {
   title?: string;
 }
 
-const SPARK_IDLE_GIF = './assets/spark/animations/spark1.gif';
-const SPARK_ACTIVE_GIF = './assets/spark/animations/spark2.gif';
+const SPARK_IDLE_GIF = getAssetUrl('/assets/spark/animations/spark1.gif');
+const SPARK_ACTIVE_GIF = getAssetUrl('/assets/spark/animations/spark2.gif');
 
 // Contour edge #1D005A smoothly diffusing outward as #A981FF gradient
 const UNIFORM_SPARK_GLOW =

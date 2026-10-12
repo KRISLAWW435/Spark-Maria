@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { AvatarShape } from '../types';
+import { AvatarShape, getAssetUrl } from '../types';
 import { SVG_AVATAR_SHAPES, getShapeMaskStyle } from '../shapes';
 import { soundEngine } from '../engine/SoundEngine';
 import { InlineColorWheel } from './InlineColorWheel';
@@ -237,7 +237,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
                   className="w-full h-full flex items-center justify-center overflow-hidden transition-colors duration-300"
                 >
                   <img
-                    src={item.src}
+                    src={getAssetUrl(item.src)}
                     alt={item.label}
                     referrerPolicy="no-referrer"
                     style={{

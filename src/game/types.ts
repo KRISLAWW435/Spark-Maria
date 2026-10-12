@@ -226,3 +226,17 @@ export interface PlayerProgress {
   activeOrder?: 1 | 2 | 3;
 }
 
+export const getAssetUrl = (path: string): string => {
+  if (!path) return '';
+  if (path.startsWith('data:') || path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path.startsWith('./') ? path.slice(2) : path;
+  const base = import.meta.env.BASE_URL || '/';
+  if (base.endsWith('/')) {
+    return `${base}${cleanPath}`;
+  }
+  return `${base}/${cleanPath}`;
+};
+
+

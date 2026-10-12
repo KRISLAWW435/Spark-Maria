@@ -1,3 +1,5 @@
+import { getAssetUrl } from '../types';
+
 export interface StickerAsset {
   id: string; // 'icon1' .. 'icon24'
   filename: string;
@@ -43,7 +45,7 @@ export const CHARACTER_STICKERS = ALL_STICKERS.filter(s => s.category === 'chara
 
 export const getStickerSrc = (id: string): string => {
   const match = ALL_STICKERS.find(s => s.id === id);
-  if (match) return match.filename;
-  if (id.startsWith('/')) return id;
-  return `/assets/stickers/${id}.webp`;
+  if (match) return getAssetUrl(match.filename);
+  if (id.startsWith('/') || id.startsWith('./')) return getAssetUrl(id);
+  return getAssetUrl(`/assets/stickers/${id}.webp`);
 };
