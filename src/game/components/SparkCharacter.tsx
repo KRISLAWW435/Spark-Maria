@@ -14,8 +14,8 @@ export interface SparkCharacterProps {
   title?: string;
 }
 
-const SPARK_IDLE_GIF = '/assets/spark/animations/spark1.gif';
-const SPARK_ACTIVE_GIF = '/assets/spark/animations/spark2.gif';
+const SPARK_IDLE_GIF = './assets/spark/animations/spark1.gif';
+const SPARK_ACTIVE_GIF = './assets/spark/animations/spark2.gif';
 
 // Contour edge #1D005A smoothly diffusing outward as #A981FF gradient
 const UNIFORM_SPARK_GLOW =

@@ -9,7 +9,7 @@ interface VideoTransitionProps {
 }
 
 export const VideoTransition: React.FC<VideoTransitionProps> = ({
-  src = '/assets/avatars/videos/transition-drive-to-client.webm',
+  src = './assets/avatars/videos/transition-drive-to-client.webm',
   onCovered,
   onComplete,
 }) => {
