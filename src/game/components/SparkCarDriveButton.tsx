@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { getAssetUrl } from '../types';
 
 interface SparkCarDriveButtonProps {
   onClick: () => void;
@@ -82,7 +83,7 @@ export const SparkCarDriveButton: React.FC<SparkCarDriveButtonProps> = ({
         className="relative z-10 flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-1"
       >
         <img
-          src="/assets/spark_car.webp"
+          src={getAssetUrl('/assets/spark_car.webp')}
           alt="Машинка Спарка"
           className="w-44 sm:w-52 max-h-24 sm:max-h-28 object-contain cursor-pointer"
           draggable={false}

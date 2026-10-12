@@ -232,11 +232,9 @@ export const getAssetUrl = (path: string): string => {
     return path;
   }
   const cleanPath = path.startsWith('/') ? path.slice(1) : path.startsWith('./') ? path.slice(2) : path;
-  const base = import.meta.env.BASE_URL || '/';
-  if (base.endsWith('/')) {
-    return `${base}${cleanPath}`;
-  }
-  return `${base}/${cleanPath}`;
+  const base = import.meta.env.BASE_URL;
+  const basePath = base && base !== './' ? base : '/';
+  return `${basePath.endsWith('/') ? basePath : basePath + '/'}${cleanPath}`;
 };
 
 

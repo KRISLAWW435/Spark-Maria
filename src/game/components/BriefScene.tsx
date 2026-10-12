@@ -126,7 +126,7 @@ export const BriefScene: React.FC<BriefSceneProps> = ({ orderNumber = 1, onCompl
       {/* Sprites Showcase */}
       <div className="relative z-10 flex items-end justify-between max-w-4xl mx-auto w-full mt-auto mb-2 pointer-events-none">
         <div className="relative shrink-0 pointer-events-auto transform transition-transform duration-300">
-          <MarieSprite emotion={current.marieEmotion} size="lg" />
+          <MarieSprite emotion={current.marieEmotion} size={540} />
         </div>
 
         <div className="relative shrink-0 pointer-events-auto transform transition-transform duration-300">
