@@ -330,6 +330,7 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
             onSignIconPointerDown={handleIconPointerDown}
             onSignIconClick={(id) => setSelectedIconId(id)}
             signContainerRef={signContainerRef}
+            signOffsetY={-15}
           />
 
           {/* Spark Design Tip Box in Bottom-Left Corner */}

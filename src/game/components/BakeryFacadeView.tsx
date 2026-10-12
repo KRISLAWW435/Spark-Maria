@@ -24,6 +24,7 @@ interface BakeryFacadeViewProps {
   onSignIconPointerDown?: (id: string, e: React.PointerEvent) => void;
   onSignIconClick?: (id: string, e: React.MouseEvent) => void;
   signContainerRef?: React.Ref<HTMLDivElement>;
+  signOffsetY?: number;
 }
 
 export const BakeryFacadeView: React.FC<BakeryFacadeViewProps> = ({
@@ -42,6 +43,7 @@ export const BakeryFacadeView: React.FC<BakeryFacadeViewProps> = ({
   onSignIconPointerDown,
   onSignIconClick,
   signContainerRef,
+  signOffsetY,
 }) => {
   // Calm highlight without blinking (sign has no highlight)
   const getZoneHighlight = (key: FacadeZoneKey) => {
@@ -94,7 +96,9 @@ export const BakeryFacadeView: React.FC<BakeryFacadeViewProps> = ({
           {/* ================= ZONE 1: SIGN (Над дверью) ================= */}
           <div
             style={{
-              top: ZONES.sign.top,
+              top: signOffsetY
+                ? `calc(${ZONES.sign.top} ${signOffsetY < 0 ? '-' : '+'} ${Math.abs(signOffsetY)}px)`
+                : ZONES.sign.top,
               left: ZONES.sign.left,
               width: ZONES.sign.width,
               height: ZONES.sign.height,
