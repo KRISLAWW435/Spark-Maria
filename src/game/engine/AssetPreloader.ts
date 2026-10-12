@@ -16,8 +16,10 @@ class AssetPreloader {
     const imagesToPreload = [
       getAssetUrl('/assets/spark/animations/spark1.gif'),
       getAssetUrl('/assets/spark/animations/spark2.gif'),
+      getAssetUrl('/assets/spark/animations/spark_greeting.gif'),
       getAssetUrl('/assets/Spark/spark1.gif'),
       getAssetUrl('/assets/Spark/spark2.gif'),
+      getAssetUrl('/assets/Spark/spark_greeting.gif'),
       GAME_ASSETS.backgrounds.bakeryInterior,
       GAME_ASSETS.backgrounds.bakeryStreet,
       GAME_ASSETS.backgrounds.studioSpark,

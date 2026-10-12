@@ -32,6 +32,45 @@ import {
 
 const STUDIO_STORAGE_KEY = 'spark_studio_data';
 const CUSTOM_AVATAR_STORAGE_KEY = 'spark_custom_avatar_data';
+const SPARK_LAST_VISIT_KEY = 'spark_last_visit';
+
+interface VisitGreetingResult {
+  replyText: string;
+  isLongAbsence: boolean;
+}
+
+export const checkSparkVisitGreeting = (): VisitGreetingResult => {
+  let replyText = 'Привет! Готов творить?';
+  let isLongAbsence = false;
+
+  try {
+    const rawVal = localStorage.getItem(SPARK_LAST_VISIT_KEY);
+    const now = Date.now();
+
+    if (rawVal) {
+      const parsedTime = isNaN(Number(rawVal))
+        ? new Date(rawVal).getTime()
+        : Number(rawVal);
+
+      if (!isNaN(parsedTime) && parsedTime > 0) {
+        const diffMs = now - parsedTime;
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+        if (diffDays >= 3) {
+          isLongAbsence = true;
+          replyText = 'О, ты вернулся! Я скучала!';
+        } else {
+          // Visited today or within last 3 days
+          replyText = 'Привет! Готов творить?';
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error reading spark_last_visit:', err);
+  }
+
+  return { replyText, isLongAbsence };
+};
 
 // Permanent Purple/Blue Color for Studio Name - Studio color never changes this!
 const STUDIO_NAME_PERMANENT_COLOR = '#7C3AED';
@@ -207,6 +246,33 @@ export const SparkStudioScene = React.forwardRef<
     return studio.isCreated ? 'idle' : 'welcome_1';
   });
 
+  // Greeting state when Spark welcomes the player upon opening/entering the studio
+  const [greetingActive, setGreetingActive] = useState<boolean>(() => {
+    return studio.isCreated;
+  });
+
+  const [greetingText] = useState<string>(() => {
+    return checkSparkVisitGreeting().replyText;
+  });
+
+  // Update spark_last_visit in localStorage upon showing the greeting
+  useEffect(() => {
+    try {
+      localStorage.setItem(SPARK_LAST_VISIT_KEY, Date.now().toString());
+    } catch (err) {
+      console.warn('Error saving spark_last_visit:', err);
+    }
+  }, []);
+
+  // Auto-dismiss greeting after 10s if player doesn't interact, transitioning smoothly to idle
+  useEffect(() => {
+    if (!greetingActive) return;
+    const timer = setTimeout(() => {
+      setGreetingActive(false);
+    }, 10000);
+    return () => clearTimeout(timer);
+  }, [greetingActive]);
+
   // State flag for animated letter appearance after creation
   const [hasLetterPopped, setHasLetterPopped] = useState(() => studio.isCreated);
 
@@ -332,6 +398,7 @@ export const SparkStudioScene = React.forwardRef<
   // Handle clicking '+' or opening panel from tutorial
   const handleOpenEditPanel = () => {
     soundEngine.playClick();
+    setGreetingActive(false);
     setPanelStep(1);
     setSparkStudioReply(SPARK_STUDIO_REPLIES.step1.initial);
     setIsEditPanelOpen(true);
@@ -420,6 +487,20 @@ export const SparkStudioScene = React.forwardRef<
             : ('happy' as const),
         showNext: false,
         highlightLaptop: false,
+      };
+    }
+
+    // Spark greeting when player enters / returns to the studio
+    if (greetingActive && studio.isCreated) {
+      return {
+        text: greetingText,
+        emotion: 'happy' as const,
+        showNext: true,
+        onNext: () => {
+          soundEngine.playPop();
+          setGreetingActive(false);
+        },
+        nextLabel: 'Готов! ✨',
       };
     }
 
@@ -528,6 +609,14 @@ export const SparkStudioScene = React.forwardRef<
             highlightLaptop: true,
           };
         }
+        if (studio.isCreated && isBakeryCompleted) {
+          return {
+            text: 'Твоя студия сияет! Давай творить новые шедевры! 🎨✨',
+            emotion: 'happy' as const,
+            showNext: false,
+            highlightLaptop: true,
+          };
+        }
         return null;
     }
   };
@@ -554,6 +643,7 @@ export const SparkStudioScene = React.forwardRef<
   const activeShapeId: AvatarShape = isEditPanelOpen ? draftShape : (studio.shape || 'blob_2');
 
   const shouldShowMailBadge = !isBakeryCompleted && (studio.isCreated || hasLetterPopped || dialogueStep === 'done_letter_arrived' || dialogueStep === 'done_look_who');
+  const isSparkGreeting = greetingActive || (!studio.isCreated && dialogueStep === 'welcome_1');
 
   return (
     <div className="relative w-full h-screen bg-slate-950 overflow-hidden select-none font-sans">
@@ -798,6 +888,7 @@ export const SparkStudioScene = React.forwardRef<
               {/* Spark Sprite */}
               <div className="relative h-full w-auto">
                 <SparkCharacter
+                  state={isSparkGreeting ? 'greeting' : undefined}
                   size="100%"
                   className="h-full w-auto"
                   interactive={true}
@@ -805,7 +896,9 @@ export const SparkStudioScene = React.forwardRef<
                   idleTimeoutMs={20000}
                   onClick={() => {
                     soundEngine.playClick();
-                    if (dialogue?.showNext && dialogue?.onNext) {
+                    if (greetingActive) {
+                      setGreetingActive(false);
+                    } else if (dialogue?.showNext && dialogue?.onNext) {
                       dialogue.onNext();
                     } else if (!isEditPanelOpen && studio.isCreated) {
                       setDialogueStep('done_look_who');
@@ -818,7 +911,7 @@ export const SparkStudioScene = React.forwardRef<
 
             {/* Spark Speech Dialogue Bubble */}
             <motion.div
-              key={isEditPanelOpen ? sparkStudioReply : dialogueStep}
+              key={isEditPanelOpen ? sparkStudioReply : (greetingActive ? 'greeting' : dialogueStep)}
               initial={{ opacity: 0, scale: 0.96, y: 4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: -4 }}
@@ -877,6 +970,7 @@ export const SparkStudioScene = React.forwardRef<
             transition={{ type: 'spring', damping: 18, stiffness: 180 }}
             onClick={() => {
               soundEngine.playClick();
+              setGreetingActive(false);
               setIsLaptopOpen(true);
               if (dialogueStep === 'done_letter_arrived' || dialogueStep === 'done_look_who') {
                 setDialogueStep('idle');

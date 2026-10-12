@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getAssetUrl } from '../types';
 
-export type SparkState = 'idle' | 'active';
+export type SparkState = 'idle' | 'active' | 'greeting';
 export type SparkSize = 'small' | 'medium' | 'large' | number | string;
 
 export interface SparkCharacterProps {
@@ -17,6 +17,7 @@ export interface SparkCharacterProps {
 
 const SPARK_IDLE_GIF = getAssetUrl('/assets/spark/animations/spark1.gif');
 const SPARK_ACTIVE_GIF = getAssetUrl('/assets/spark/animations/spark2.gif');
+const SPARK_GREETING_GIF = getAssetUrl('/assets/spark/animations/spark_greeting.gif');
 
 // Contour edge #1D005A smoothly diffusing outward as #A981FF gradient
 const UNIFORM_SPARK_GLOW =
@@ -37,10 +38,13 @@ export const SparkCharacter: React.FC<SparkCharacterProps> = ({
   const nudgeDurationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // spark1.gif runs constantly by default.
-  // spark2.gif turns on ONLY when the player is idle for ~20 seconds (or if parent explicitly overrides via state prop).
-  const isCurrentlyActive = controlledState
-    ? controlledState === 'active'
-    : isNudgeActive;
+  // spark_greeting.gif runs when controlledState === 'greeting'.
+  // spark2.gif turns on ONLY when the player is idle for ~20 seconds (or if parent explicitly overrides via state prop 'active').
+  const currentState: SparkState = controlledState
+    ? controlledState
+    : isNudgeActive
+    ? 'active'
+    : 'idle';
 
   // 20-second inactivity detection
   useEffect(() => {
@@ -142,7 +146,7 @@ export const SparkCharacter: React.FC<SparkCharacterProps> = ({
         loading="eager"
         draggable={false}
         className={`w-auto h-full object-contain pointer-events-none select-none border-none bg-transparent ${
-          isCurrentlyActive ? 'hidden pointer-events-none' : 'block'
+          currentState === 'idle' ? 'block' : 'hidden pointer-events-none'
         }`}
       />
 
@@ -153,7 +157,18 @@ export const SparkCharacter: React.FC<SparkCharacterProps> = ({
         loading="eager"
         draggable={false}
         className={`w-auto h-full object-contain pointer-events-none select-none border-none bg-transparent ${
-          isCurrentlyActive ? 'block' : 'hidden pointer-events-none'
+          currentState === 'active' ? 'block' : 'hidden pointer-events-none'
+        }`}
+      />
+
+      {/* 3. GREETING STATE: spark_greeting.gif */}
+      <img
+        src={SPARK_GREETING_GIF}
+        alt="Спарк (Приветствие)"
+        loading="eager"
+        draggable={false}
+        className={`w-auto h-full object-contain pointer-events-none select-none border-none bg-transparent ${
+          currentState === 'greeting' ? 'block' : 'hidden pointer-events-none'
         }`}
       />
     </div>
