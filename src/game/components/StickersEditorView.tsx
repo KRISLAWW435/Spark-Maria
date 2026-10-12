@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { StickersDesign, StickerItem } from '../types';
-import { ALL_STICKERS } from '../constants/stickers';
+import { ALL_STICKERS, getStickerSrc } from '../constants/stickers';
 import { SingleStickerRender } from './StickersRender';
 import { SparkSprite } from './SparkSprite';
 import { soundEngine } from '../engine/SoundEngine';
@@ -423,7 +423,7 @@ export const StickersEditorView: React.FC<StickersEditorViewProps> = ({
                           : 'border-slate-200 hover:bg-slate-50'
                       }`}
                     >
-                      <img src={stk.filename} alt={stk.name} className="w-8 h-8 object-contain" />
+                      <img src={getStickerSrc(stk.id)} alt={stk.name} className="w-8 h-8 object-contain" />
                     </button>
                   ))}
                 </div>

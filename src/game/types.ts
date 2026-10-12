@@ -228,13 +228,46 @@ export interface PlayerProgress {
 
 export const getAssetUrl = (path: string): string => {
   if (!path) return '';
-  if (path.startsWith('data:') || path.startsWith('http://') || path.startsWith('https://')) {
+  if (
+    path.startsWith('data:') ||
+    path.startsWith('http://') ||
+    path.startsWith('https://') ||
+    path.startsWith('blob:')
+  ) {
     return path;
   }
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path.startsWith('./') ? path.slice(2) : path;
-  const base = import.meta.env.BASE_URL;
-  const basePath = base && base !== './' ? base : '/';
-  return `${basePath.endsWith('/') ? basePath : basePath + '/'}${cleanPath}`;
+
+  // Determine base directory path (e.g. '/' or '/Spark-Maria/' on GitHub Pages)
+  let baseDir = '/';
+  const envBase = import.meta.env.BASE_URL;
+
+  if (envBase && envBase !== './' && envBase !== '/') {
+    baseDir = envBase.endsWith('/') ? envBase : `${envBase}/`;
+  } else if (typeof window !== 'undefined') {
+    let pathname = window.location.pathname || '/';
+    // If pathname ends with a filename (e.g. /index.html), strip the filename
+    if (pathname.split('/').pop()?.includes('.')) {
+      pathname = pathname.substring(0, pathname.lastIndexOf('/') + 1);
+    }
+    if (!pathname.endsWith('/')) {
+      pathname += '/';
+    }
+    baseDir = pathname;
+  }
+
+  const cleanPath = path.startsWith('/')
+    ? path.slice(1)
+    : path.startsWith('./')
+    ? path.slice(2)
+    : path;
+
+  // Prevent double prefixing if path already starts with baseDir
+  const normalizedBase = baseDir.startsWith('/') ? baseDir.slice(1) : baseDir;
+  if (normalizedBase && cleanPath.startsWith(normalizedBase)) {
+    return `/${cleanPath}`;
+  }
+
+  return `${baseDir}${cleanPath}`;
 };
 
 

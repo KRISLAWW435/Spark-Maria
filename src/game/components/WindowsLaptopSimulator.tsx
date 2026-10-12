@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PlayerProgress, StudioData, AvatarShape, SignDesign } from '../types';
+import { PlayerProgress, StudioData, AvatarShape, SignDesign, getAssetUrl } from '../types';
 import { soundEngine } from '../engine/SoundEngine';
 import { MarieSprite } from './MarieSprite';
 import { SVG_AVATAR_SHAPES } from '../shapes';
@@ -961,7 +961,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <img
-                          src="/assets/portraits/portrait_Mari.webp"
+                          src={getAssetUrl('/assets/portraits/portrait_Mari.webp')}
                           alt="Мария"
                           className="w-8 h-8 rounded-lg object-cover border border-amber-300 shrink-0 shadow-xs"
                         />
@@ -1001,7 +1001,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <img
-                            src="/assets/portraits/portrait_Mari.webp"
+                            src={getAssetUrl('/assets/portraits/portrait_Mari.webp')}
                             alt="Мария"
                             className="w-8 h-8 rounded-lg object-cover border border-amber-300 shrink-0 shadow-xs"
                           />
@@ -1042,7 +1042,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <img
-                            src="/assets/portraits/portrait_Mari.webp"
+                            src={getAssetUrl('/assets/portraits/portrait_Mari.webp')}
                             alt="Мария"
                             className="w-8 h-8 rounded-lg object-cover border border-amber-300 shrink-0 shadow-xs"
                           />
@@ -1077,7 +1077,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                           <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
                             <div className="flex items-center gap-4">
                               <img
-                                src="/assets/portraits/portrait_Mari.webp"
+                                src={getAssetUrl('/assets/portraits/portrait_Mari.webp')}
                                 alt="Мария"
                                 className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-300 shadow-md shrink-0"
                               />
@@ -1138,7 +1138,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                           <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
                             <div className="flex items-center gap-4">
                               <img
-                                src="/assets/portraits/portrait_Mari.webp"
+                                src={getAssetUrl('/assets/portraits/portrait_Mari.webp')}
                                 alt="Мария"
                                 className="w-14 h-14 rounded-2xl object-cover border-2 border-amber-300 shadow-md shrink-0"
                               />
@@ -1204,7 +1204,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                           <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
                             <div className="flex items-center gap-4">
                               <img
-                                src="/assets/portraits/portrait_Mari.webp"
+                                src={getAssetUrl('/assets/portraits/portrait_Mari.webp')}
                                 alt="Мария"
                                 className="w-14 h-14 rounded-2xl object-cover border-2 border-pink-300 shadow-md shrink-0"
                               />

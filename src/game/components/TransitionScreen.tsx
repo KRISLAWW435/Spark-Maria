@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { getAssetUrl } from '../types';
 
 interface TransitionScreenProps {
   onComplete: () => void;
@@ -27,7 +28,7 @@ export const TransitionScreen: React.FC<TransitionScreenProps> = ({ onComplete }
         className="flex flex-col items-center gap-6"
       >
         <img
-          src="/assets/spark_car.webp"
+          src={getAssetUrl('/assets/spark_car.webp')}
           alt="Spark Car"
           className="w-48 h-48 object-contain"
         />

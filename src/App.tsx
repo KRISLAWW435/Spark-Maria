@@ -7,6 +7,7 @@ import {
   PosterDesign,
   StickersDesign,
   PortfolioItem,
+  getAssetUrl,
 } from './game/types';
 import {
   SaveEngine,
@@ -541,7 +542,7 @@ export default function App() {
         {/* Fullscreen Video Transition: Drive to Marie */}
         {showDriveVideo && (
           <VideoTransition
-            src="/assets/avatars/videos/transition-drive-to-client.webm"
+            src={getAssetUrl('/assets/avatars/videos/transition-drive-to-client.webm')}
             onCovered={() => {
               setCurrentScene('intro_bakery');
             }}

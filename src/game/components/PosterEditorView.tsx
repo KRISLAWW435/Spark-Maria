@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PosterDesign } from '../types';
-import { ALL_STICKERS } from '../constants/stickers';
+import { ALL_STICKERS, getStickerSrc } from '../constants/stickers';
 import { PosterRender } from './PosterRender';
 import { SparkSprite } from './SparkSprite';
 import { soundEngine } from '../engine/SoundEngine';
@@ -403,7 +403,7 @@ export const PosterEditorView: React.FC<PosterEditorViewProps> = ({
                       title={stk.name}
                     >
                       <img
-                        src={stk.filename}
+                        src={getStickerSrc(stk.id)}
                         alt={stk.name}
                         className="w-9 h-9 object-contain drop-shadow-xs"
                       />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AvatarShape, StudioFontSize } from '../types';
+import { AvatarShape, StudioFontSize, getAssetUrl } from '../types';
 import { getShapeMaskStyle } from '../shapes';
 import { PRESET_AVATARS } from './AvatarPicker';
 import { Pencil, Sparkles } from 'lucide-react';
@@ -92,7 +92,7 @@ export const StudioWall: React.FC<StudioWallProps> = ({
     const preset = PRESET_AVATARS.find((a) => a.id === avatar) || PRESET_AVATARS[0];
     return (
       <img
-        src={preset.src}
+        src={getAssetUrl(preset.src)}
         alt={preset.label}
         referrerPolicy="no-referrer"
         style={imgStyle}

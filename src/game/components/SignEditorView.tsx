@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { SignDesign, FontStyle, SignIconItem } from '../types';
-import { SIGN_ICONS } from '../constants/stickers';
+import { SIGN_ICONS, getStickerSrc } from '../constants/stickers';
 import { SignRender } from './SignRender';
 import { BakeryFacadeView } from './BakeryFacadeView';
 import { SparkSprite } from './SparkSprite';
@@ -814,7 +814,7 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
                         title="Нажми, чтобы добавить на вывеску"
                       >
                         <img
-                          src={ic.filename}
+                          src={getStickerSrc(ic.id)}
                           alt={ic.name}
                           className="w-9 h-9 object-contain drop-shadow-xs pointer-events-none"
                         />

@@ -28,14 +28,14 @@ export interface AvatarItem {
 }
 
 export const PRESET_AVATARS: AvatarItem[] = [
-  { id: 'avatar1', label: 'Аватар 1', src: '/assets/avatars/avatar1.png' },
-  { id: 'avatar2', label: 'Аватар 2', src: '/assets/avatars/avatar2.png' },
-  { id: 'avatar3', label: 'Аватар 3', src: '/assets/avatars/avatar3.png' },
-  { id: 'avatar4', label: 'Аватар 4', src: '/assets/avatars/avatar4.png' },
-  { id: 'avatar5', label: 'Аватар 5', src: '/assets/avatars/avatar5.png' },
-  { id: 'avatar6', label: 'Аватар 6', src: '/assets/avatars/avatar6.png' },
-  { id: 'avatar7', label: 'Аватар 7', src: '/assets/avatars/avatar7.png' },
-  { id: 'avatar8', label: 'Аватар 8', src: '/assets/avatars/avatar8.png' },
+  { id: 'avatar1', label: 'Аватар 1', src: getAssetUrl('/assets/avatars/avatar1.png') },
+  { id: 'avatar2', label: 'Аватар 2', src: getAssetUrl('/assets/avatars/avatar2.png') },
+  { id: 'avatar3', label: 'Аватар 3', src: getAssetUrl('/assets/avatars/avatar3.png') },
+  { id: 'avatar4', label: 'Аватар 4', src: getAssetUrl('/assets/avatars/avatar4.png') },
+  { id: 'avatar5', label: 'Аватар 5', src: getAssetUrl('/assets/avatars/avatar5.png') },
+  { id: 'avatar6', label: 'Аватар 6', src: getAssetUrl('/assets/avatars/avatar6.png') },
+  { id: 'avatar7', label: 'Аватар 7', src: getAssetUrl('/assets/avatars/avatar7.png') },
+  { id: 'avatar8', label: 'Аватар 8', src: getAssetUrl('/assets/avatars/avatar8.png') },
 ];
 
 export const STUDIO_COLORS = [
