@@ -1,5 +1,7 @@
 // Gentle OS Sound Engine with Audio File Loading & Web Audio Synth Fallback
 
+import { getAssetUrl } from '../types';
+
 type MuteListener = (muted: boolean) => void;
 
 class SoundEngine {
@@ -58,7 +60,7 @@ class SoundEngine {
     ];
 
     soundNames.forEach((name) => {
-      const path = `/assets/sounds/os/${name}.mp3`;
+      const path = getAssetUrl(`/assets/sounds/os/${name}.mp3`);
       const audioArray: HTMLAudioElement[] = [];
       for (let i = 0; i < 3; i++) {
         const audio = new Audio(path);
