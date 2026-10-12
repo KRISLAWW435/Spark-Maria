@@ -8,7 +8,11 @@ export const defaultSignDesign: SignDesign = {
   font: 'sweet',
   textColor: '#2A1B12',
   icon: 'icon1',
-  subtext: 'СВЕЖИЕ ЭКЛЕРЫ & КЕКСЫ',
+  icons: [
+    { id: 'icon-main', icon: 'icon1', x: 18, y: 50, size: 48 },
+  ],
+  subtext: '',
+  subtextSize: 14,
   fontSize: 24,
   fontStyle: 'sweet',
   shape: 'rectangle',

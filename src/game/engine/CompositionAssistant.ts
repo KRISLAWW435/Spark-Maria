@@ -22,7 +22,7 @@ export class CompositionAssistant {
     if (contrast < 3.0) {
       return {
         status: 'warning',
-        sparkMessage: 'Текст плохо видно на фоне. Попробуй другой цвет для лучшей читаемости!',
+        sparkMessage: 'Ой, кажется ничего не видно — текст сливается с фоном!',
         guideBorderColor: 'yellow',
         isLowContrast: true,
       };

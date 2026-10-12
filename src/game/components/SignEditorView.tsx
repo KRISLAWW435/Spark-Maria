@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { SignDesign, FontStyle } from '../types';
+import React, { useState, useRef } from 'react';
+import { SignDesign, FontStyle, SignIconItem } from '../types';
 import { SIGN_ICONS } from '../constants/stickers';
 import { SignRender } from './SignRender';
+import { BakeryFacadeView } from './BakeryFacadeView';
 import { SparkSprite } from './SparkSprite';
 import { soundEngine } from '../engine/SoundEngine';
 import { CompositionAssistant } from '../engine/CompositionAssistant';
@@ -18,6 +19,7 @@ import {
   Square,
   Undo2,
   Redo2,
+  Store,
 } from 'lucide-react';
 
 interface SignEditorViewProps {
@@ -25,6 +27,7 @@ interface SignEditorViewProps {
   onTestDesign: (design: SignDesign) => void;
   versionNumber?: number;
   isWindowMode?: boolean;
+  onClose?: () => void;
 }
 
 export const SIGN_BG_COLORS = [
@@ -34,6 +37,10 @@ export const SIGN_BG_COLORS = [
   { name: 'Мятный', hex: '#E0F2FE', border: '#BAE6FD' },
   { name: 'Шоколад', hex: '#381E11', border: '#23120A' },
   { name: 'Яркий индиго', hex: '#4F46E5', border: '#3730A3' },
+  { name: 'Ванильный', hex: '#FEF08A', border: '#FDE047' },
+  { name: 'Персиковый', hex: '#FFEDD5', border: '#FDBA74' },
+  { name: 'Фисташковый', hex: '#ECFDF5', border: '#A7F3D0' },
+  { name: 'Небесный', hex: '#EFF6FF', border: '#BFDBFE' },
 ];
 
 export const SIGN_TEXT_COLORS = [
@@ -56,27 +63,48 @@ export const SIGN_FONTS: Array<{ id: FontStyle; label: string; desc: string; sam
   { id: 'elegant', label: 'Элегантный', desc: 'Изысканный французский', sample: 'Pâtisserie Marie' },
 ];
 
+export const SIGN_HARMONY_PAIRS = [
+  { name: 'Кремовый + Эспрессо', bg: '#FFF7ED', text: '#2A1B12' },
+  { name: 'Солнечный + Тёмно-синий', bg: '#FEF3C7', text: '#0F172A' },
+  { name: 'Мятный + Шоколад', bg: '#ECFDF5', text: '#381E11' },
+  { name: 'Персиковый + Какао', bg: '#FFEDD5', text: '#5D4037' },
+  { name: 'Небесный + Тёмно-синий', bg: '#EFF6FF', text: '#0F172A' },
+];
+
 export const SignEditorView: React.FC<SignEditorViewProps> = ({
   initialDesign,
   onTestDesign,
   versionNumber = 1,
   isWindowMode = true,
+  onClose,
 }) => {
+  const initialIcons: SignIconItem[] = initialDesign.icons && Array.isArray(initialDesign.icons) && initialDesign.icons.length > 0
+    ? initialDesign.icons
+    : initialDesign.icon && initialDesign.icon !== 'none'
+    ? [{ id: 'icon-main', icon: initialDesign.icon, x: 20, y: 50, size: initialDesign.iconSize || 48 }]
+    : [{ id: 'icon-main', icon: 'icon1', x: 20, y: 50, size: 48 }];
+
   const [design, setDesign] = useState<SignDesign>({
     ...initialDesign,
-    shape: 'rectangle', // Form is strictly rectangular as per TZ
+    shape: 'rectangle',
     background: initialDesign.background || initialDesign.bgColor || '#FFF7ED',
     bgColor: initialDesign.background || initialDesign.bgColor || '#FFF7ED',
     font: initialDesign.font || 'sweet',
     fontStyle: initialDesign.fontStyle || 'sweet',
     textColor: initialDesign.textColor || '#2A1B12',
-    icon: initialDesign.icon || 'icon1',
+    icon: initialDesign.icon || initialIcons[0]?.icon || 'icon1',
+    icons: initialIcons,
+    iconSize: initialDesign.iconSize || 48,
   });
 
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4 | 5>(1);
-  const [showGrid, setShowGrid] = useState(false);
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3 | 4>(1);
+  const [showFigmaGuide, setShowFigmaGuide] = useState(true);
   const [history, setHistory] = useState<SignDesign[]>([design]);
   const [historyIdx, setHistoryIdx] = useState(0);
+
+  const [selectedIconId, setSelectedIconId] = useState<string | null>(initialIcons[0]?.id || null);
+  const [isDragging, setIsDragging] = useState(false);
+  const signContainerRef = useRef<HTMLDivElement>(null);
 
   const update = (patch: Partial<SignDesign>) => {
     soundEngine.playPop();
@@ -89,6 +117,81 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
     newHist.push(next);
     setHistory(newHist);
     setHistoryIdx(newHist.length - 1);
+  };
+
+  // Dragging icons freely across the sign layout
+  const handleIconPointerDown = (id: string, e: React.PointerEvent) => {
+    e.stopPropagation();
+    setSelectedIconId(id);
+    setIsDragging(true);
+
+    const container = signContainerRef.current;
+    if (!container) return;
+
+    const onPointerMove = (moveEv: PointerEvent) => {
+      const rect = container.getBoundingClientRect();
+      const xPercent = Math.max(8, Math.min(92, Math.round(((moveEv.clientX - rect.left) / rect.width) * 100)));
+      const yPercent = Math.max(12, Math.min(88, Math.round(((moveEv.clientY - rect.top) / rect.height) * 100)));
+
+      setDesign((prev) => {
+        const currentList = prev.icons || [];
+        const nextIcons = currentList.map((ic) =>
+          ic.id === id ? { ...ic, x: xPercent, y: yPercent } : ic
+        );
+        return { ...prev, icons: nextIcons };
+      });
+    };
+
+    const onPointerUp = () => {
+      setIsDragging(false);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+
+      // Record in undo history
+      setDesign((latest) => {
+        const newHist = history.slice(0, historyIdx + 1);
+        newHist.push(latest);
+        setHistory(newHist);
+        setHistoryIdx(newHist.length - 1);
+        return latest;
+      });
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+  };
+
+  const handleAddIcon = (iconId: string) => {
+    soundEngine.playSuccess();
+    const newId = `icon-${Date.now()}`;
+    const newIconItem: SignIconItem = {
+      id: newId,
+      icon: iconId,
+      x: 75,
+      y: 50,
+      size: 48,
+    };
+    const currentList = design.icons || [];
+    const updated = [...currentList, newIconItem];
+    update({ icons: updated, icon: iconId });
+    setSelectedIconId(newId);
+  };
+
+  const handleDeleteIcon = (id: string) => {
+    soundEngine.playPop();
+    const currentList = design.icons || [];
+    const remaining = currentList.filter((ic) => ic.id !== id);
+    update({ icons: remaining, icon: remaining[0]?.icon || 'none' });
+    setSelectedIconId(remaining[0]?.id || null);
+  };
+
+  const handleUpdateSelectedIcon = (patch: Partial<SignIconItem>) => {
+    if (!selectedIconId) return;
+    const currentList = design.icons || [];
+    const updated = currentList.map((ic) =>
+      ic.id === selectedIconId ? { ...ic, ...patch } : ic
+    );
+    update({ icons: updated, icon: patch.icon || design.icon });
   };
 
   const handleUndo = () => {
@@ -110,15 +213,16 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
   const feedback = CompositionAssistant.evaluateSign(design);
 
   const steps = [
-    { id: 1, title: '1. Фон (6 цветов)', icon: <Palette className="w-4 h-4" /> },
-    { id: 2, title: '2. Название (текст)', icon: <Type className="w-4 h-4" /> },
-    { id: 3, title: '3. Шрифт (6 стилей)', icon: <Type className="w-4 h-4" /> },
-    { id: 4, title: '4. Цвет букв (8 цветов)', icon: <Palette className="w-4 h-4" /> },
-    { id: 5, title: '5. Иконка (20 на выбор)', icon: <ImageIcon className="w-4 h-4" /> },
+    { id: 1, title: 'Цвета', icon: <Palette className="w-5 h-5" /> },
+    { id: 2, title: 'Текст', icon: <Type className="w-5 h-5" /> },
+    { id: 3, title: 'Шрифт', icon: <Type className="w-5 h-5" /> },
+    { id: 4, title: 'Иконки', icon: <ImageIcon className="w-5 h-5" /> },
   ];
 
+
+
   return (
-    <div className={`w-full ${isWindowMode ? 'h-full' : 'h-screen'} bg-[#F7F9FC] text-slate-800 flex flex-col justify-between overflow-hidden select-none font-sans`}>
+    <div className={`${onClose ? 'fixed inset-0 z-50 w-screen h-screen' : `w-full ${isWindowMode ? 'h-full' : 'h-screen'}`} bg-[#F7F9FC] text-slate-800 flex flex-col justify-between overflow-hidden select-none font-sans`}>
       {/* Top Bar */}
       <div className="bg-white border-b-2 border-slate-200 px-4 py-2 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2">
@@ -131,18 +235,8 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
           </span>
         </div>
 
-        {/* Undo / Redo & Grid Toggle */}
+        {/* Undo / Redo */}
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowGrid(!showGrid)}
-            className={`px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 border transition-all cursor-pointer ${
-              showGrid ? 'bg-indigo-100 border-indigo-300 text-indigo-800' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-            }`}
-          >
-            <Grid className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Сетка</span>
-          </button>
-
           <button
             type="button"
             onClick={handleUndo}
@@ -177,45 +271,70 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
           >
             <Rocket className="w-3.5 h-3.5" /> Проверить на улице ➔
           </button>
+
+          {/* Close Fullscreen Button (✕) */}
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-11 h-11 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl flex items-center justify-center font-black text-xl cursor-pointer ml-1 transition-transform active:scale-95 shrink-0"
+              title="Закрыть редактор"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Main Workspace (3 columns on wide screens) */}
-      <div className="flex-1 flex flex-col md:flex-row p-3 gap-3 overflow-hidden">
-        {/* LEFT COLUMN: Steps */}
-        <div className="w-full md:w-56 bg-white border border-slate-200 rounded-2xl p-3 flex flex-col justify-between shrink-0 shadow-xs">
-          <div>
-            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block mb-2 px-1">
-              Шаги разработки
-            </span>
-            <div className="space-y-1.5">
-              {steps.map((st) => (
-                <button
-                  key={st.id}
-                  type="button"
-                  onClick={() => {
-                    soundEngine.playClick();
-                    setActiveStep(st.id as 1 | 2 | 3 | 4 | 5);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-all cursor-pointer ${
-                    activeStep === st.id
-                      ? 'bg-amber-400 text-slate-950 font-black shadow-sm'
-                      : 'hover:bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {st.icon}
-                    <span>{st.title}</span>
-                  </div>
-                  {activeStep > st.id && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Steps Icon Panel at Top */}
+      <div className="bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-center gap-3 z-10 shrink-0">
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">Шаги:</span>
+        {steps.map((st) => {
+          return (
+            <button
+              key={st.id}
+              type="button"
+              onClick={() => {
+                soundEngine.playClick();
+                setActiveStep(st.id as any);
+              }}
+              className={`px-3.5 py-2 rounded-2xl flex items-center gap-2 transition-all cursor-pointer relative ${
+                activeStep === st.id
+                  ? 'bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-300 font-black scale-105'
+                  : 'bg-slate-100 hover:bg-amber-100 text-slate-700 font-bold'
+              }`}
+              title={st.title}
+            >
+              {st.icon}
+              <span className="text-xs">{st.title}</span>
+              {activeStep > st.id && (
+                <div className="absolute -top-1 -right-1 bg-emerald-600 text-white rounded-full p-0.5 shadow-xs">
+                  <Check className="w-3 h-3" />
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-          {/* Spark Tip box */}
-          <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2">
-            <SparkSprite emotion={feedback.status === 'good' ? 'happy' : 'thinking'} size={40} className="shrink-0" />
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col md:flex-row p-3 gap-3 overflow-hidden">
+        {/* CENTER COLUMN: Expanded Live Canvas Preview */}
+        <div className="flex-1 bg-slate-950 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-inner border border-slate-800">
+          <BakeryFacadeView
+            signDesign={design}
+            showSignZoneGuide={showFigmaGuide}
+            activeZones={['sign']}
+            className="w-full h-full"
+            selectedSignIconId={selectedIconId}
+            onSignIconPointerDown={handleIconPointerDown}
+            onSignIconClick={(id) => setSelectedIconId(id)}
+            signContainerRef={signContainerRef}
+          />
+
+          {/* Spark Design Tip Box in Bottom-Left Corner */}
+          <div className="absolute bottom-4 left-4 z-20 bg-white/95 backdrop-blur-md border border-amber-200 p-3 rounded-2xl shadow-xl flex items-start gap-2.5 max-w-xs pointer-events-auto">
+            <SparkSprite emotion={feedback.status === 'good' ? 'happy' : 'thinking'} size={38} className="shrink-0" />
             <div className="text-[11px] leading-snug">
               <span className="font-black text-amber-900 block mb-0.5">Совет Спарк:</span>
               <p className="text-amber-800">{feedback.sparkMessage}</p>
@@ -223,114 +342,306 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
           </div>
         </div>
 
-        {/* CENTER COLUMN: Live Canvas Preview with Composition Frame */}
-        <div className="flex-1 bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between items-center relative overflow-hidden shadow-xs">
-          {/* Grid lines if enabled */}
-          {showGrid && (
-            <div
-              className="absolute inset-0 pointer-events-none opacity-25"
-              style={{
-                backgroundImage:
-                  'linear-gradient(to right, #6366f1 1px, transparent 1px), linear-gradient(to bottom, #6366f1 1px, transparent 1px)',
-                backgroundSize: '24px 24px',
-              }}
-            />
-          )}
-
-          {/* Guidelines info badge */}
-          <div className="w-full flex items-center justify-between text-xs text-slate-500 z-10 mb-2">
-            <span className="flex items-center gap-1 font-bold">
-              <Square className="w-3.5 h-3.5 text-amber-500" /> Форма: Прямоугольная
-            </span>
-            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black flex items-center gap-1 ${
-              feedback.guideBorderColor === 'green'
-                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                : 'bg-amber-100 text-amber-800 border border-amber-300'
-            }`}>
-              {feedback.guideBorderColor === 'green' ? <CheckCircle2 className="w-3 h-3 text-emerald-600" /> : <AlertCircle className="w-3 h-3 text-amber-600" />}
-              {feedback.guideBorderColor === 'green' ? 'Композиция сбалансирована' : 'Можно улучшить'}
-            </span>
-          </div>
-
-          {/* Sign Board Centerpiece */}
-          <div className="flex-1 w-full flex items-center justify-center p-4 z-10">
-            <div className={`p-4 rounded-3xl transition-all ${
-              feedback.guideBorderColor === 'green'
-                ? 'ring-4 ring-emerald-400/40 shadow-xl'
-                : 'ring-4 ring-amber-400/40 shadow-xl'
-            }`}>
-              <SignRender design={design} scale={1.2} />
-            </div>
-          </div>
-
-          {/* Bottom auto-align info */}
-          <div className="text-[11px] text-slate-400 font-medium z-10">
-            Иконка выравнивается слева от текста • Текст строго по центру
-          </div>
-        </div>
-
         {/* RIGHT COLUMN: Tool Controls for active step */}
         <div className="w-full md:w-72 bg-white border border-slate-200 rounded-2xl p-3 flex flex-col justify-between shrink-0 shadow-xs overflow-y-auto">
           <div>
-            {/* Step 1: Background (6 colors) */}
+            {/* Step 1: Colors (Background & Text Color) */}
             {activeStep === 1 && (
-              <div className="space-y-3">
-                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
-                  Фон вывески (6 цветов)
-                </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {SIGN_BG_COLORS.map((c) => (
-                    <button
-                      key={c.hex}
-                      type="button"
-                      onClick={() => update({ background: c.hex, bgColor: c.hex })}
-                      style={{ backgroundColor: c.hex }}
-                      className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                        design.background === c.hex || design.bgColor === c.hex
-                          ? 'border-amber-500 ring-2 ring-amber-300 scale-102'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <span className={`text-xs font-black ${['#381E11', '#4F46E5'].includes(c.hex) ? 'text-white' : 'text-slate-900'}`}>
-                        {c.name}
-                      </span>
-                    </button>
-                  ))}
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide mb-2">
+                    Цвет фона вывески (10 цветов)
+                  </h4>
+                  <div className="grid grid-cols-5 gap-2">
+                    {SIGN_BG_COLORS.map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => update({ background: c.hex, bgColor: c.hex })}
+                        style={{ backgroundColor: c.hex }}
+                        className={`h-9 rounded-xl border-2 transition-all cursor-pointer shadow-xs ${
+                          design.background === c.hex || design.bgColor === c.hex
+                            ? 'border-amber-500 ring-2 ring-amber-300 scale-110'
+                            : 'border-slate-300 hover:scale-105'
+                        }`}
+                        title={c.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200">
+                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide mb-2">
+                    Цвет текста (8 цветов)
+                  </h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    {SIGN_TEXT_COLORS.map((tc) => (
+                      <button
+                        key={tc.hex}
+                        type="button"
+                        onClick={() => update({ textColor: tc.hex })}
+                        style={{ backgroundColor: tc.hex }}
+                        className={`h-9 rounded-xl border-2 transition-all cursor-pointer ${
+                          design.textColor === tc.hex
+                            ? 'border-amber-500 ring-2 ring-amber-300 scale-110'
+                            : 'border-slate-300 hover:scale-105'
+                        }`}
+                        title={tc.name}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Step 2: Text Input */}
+            {/* Step 2: Text Input & Layout */}
+            {/* Step 2: Text Input & Layout */}
             {activeStep === 2 && (
-              <div className="space-y-3">
-                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
-                  Название пекарни
-                </h4>
-                <input
-                  type="text"
-                  value={design.text}
-                  onChange={(e) => update({ text: e.target.value })}
-                  maxLength={30}
-                  placeholder="Введи название..."
-                  className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-amber-500 font-black text-sm text-slate-900 outline-none"
-                />
+              <div className="space-y-3.5">
+                {/* 1. Main Title Input */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
+                      Название вывески
+                    </h4>
+                    <span className="text-[10px] font-bold text-slate-400">
+                      {design.text?.length || 0}/30
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={design.text}
+                    onChange={(e) => update({ text: e.target.value })}
+                    maxLength={30}
+                    placeholder="Введи название (например: Пекарня Мари)..."
+                    className="w-full px-3 py-2.5 rounded-xl border-2 border-slate-300 focus:border-amber-500 font-black text-sm text-slate-900 outline-none transition-all shadow-xs"
+                  />
+                </div>
 
-                <div className="pt-2">
-                  <span className="text-[11px] font-bold text-slate-400 block mb-1.5">
-                    Быстрые варианты:
+                {/* 2. Main Title Size (Размер текста названия) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">
+                      Размер текста названия:
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => update({ fontSize: Math.max(14, (design.fontSize || 24) - 2) })}
+                        className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                        title="Уменьшить на 2px"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-black text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-lg border border-amber-200 min-w-12 text-center shadow-xs">
+                        {design.fontSize || 24}px
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => update({ fontSize: Math.min(44, (design.fontSize || 24) + 2) })}
+                        className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                        title="Увеличить на 2px"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2 columns so words never spill out */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { size: 18, label: 'Мелкий', badge: '18px' },
+                      { size: 24, label: 'Средний', badge: '24px' },
+                      { size: 30, label: 'Крупный', badge: '30px' },
+                      { size: 38, label: 'Огромный', badge: '38px' },
+                    ].map((sz) => (
+                      <button
+                        key={sz.size}
+                        type="button"
+                        onClick={() => update({ fontSize: sz.size })}
+                        className={`py-2 px-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
+                          (design.fontSize || 24) === sz.size
+                            ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-sm ring-2 ring-amber-300 font-black'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 font-bold'
+                        }`}
+                      >
+                        <span className="text-xs">{sz.label}</span>
+                        <span className="text-[10px] opacity-75 font-mono">{sz.badge}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quick Presets for Title */}
+                <div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">
+                    Быстрые варианты названия:
                   </span>
-                  <div className="space-y-1">
+                  <div className="grid grid-cols-2 gap-1.5">
                     {['Пекарня Мари', 'Свежие Эклеры', 'Французская Пекарня', 'Sweet Bakery'].map((preset) => (
                       <button
                         key={preset}
                         type="button"
                         onClick={() => update({ text: preset })}
-                        className="w-full text-left px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-amber-50 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
+                        className={`text-left px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition-colors cursor-pointer truncate ${
+                          design.text === preset
+                            ? 'bg-amber-100 border-amber-400 text-amber-950 font-black'
+                            : 'bg-slate-50 border-slate-200 hover:bg-amber-50 text-slate-700'
+                        }`}
+                        title={preset}
                       >
                         {preset}
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Subtitle (Подзаголовок) - Optional Supplement (Дополнение) */}
+                <div className="pt-3 border-t border-slate-200">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
+                      <span>Подзаголовок</span>
+                      <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                        не обязательно
+                      </span>
+                    </h4>
+                    {design.subtext && design.subtext.trim().length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => update({ subtext: '' })}
+                        className="text-[11px] text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+                        title="Удалить подзаголовок"
+                      >
+                        Убрать ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {design.subtext && design.subtext.trim().length > 0 ? (
+                    <div className="space-y-2.5 animate-fadeIn">
+                      <input
+                        type="text"
+                        value={design.subtext}
+                        onChange={(e) => update({ subtext: e.target.value })}
+                        maxLength={40}
+                        placeholder="Например: Свежая выпечка каждый день..."
+                        className="w-full px-3 py-2 rounded-xl border-2 border-slate-300 focus:border-amber-500 font-bold text-xs text-slate-900 outline-none shadow-xs"
+                      />
+
+                      {/* Subtitle Font Size (Увеличен диапазон: 12px - 26px) */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[11px] font-bold text-slate-600">
+                            Размер подзаголовка:
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => update({ subtextSize: Math.max(12, (design.subtextSize || 16) - 1) })}
+                              className="w-5 h-5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                              title="Уменьшить"
+                            >
+                              -
+                            </button>
+                            <span className="text-[11px] font-black text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 min-w-10 text-center font-mono">
+                              {design.subtextSize || 16}px
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => update({ subtextSize: Math.min(26, (design.subtextSize || 16) + 1) })}
+                              className="w-5 h-5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                              title="Увеличить"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { size: 14, label: 'Компактный' },
+                            { size: 18, label: 'Стандарт' },
+                            { size: 24, label: 'Крупный' },
+                          ].map((sz) => (
+                            <button
+                              key={sz.size}
+                              type="button"
+                              onClick={() => update({ subtextSize: sz.size })}
+                              className={`py-1.5 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                (design.subtextSize || 16) === sz.size
+                                  ? 'bg-amber-300 text-slate-950 border-amber-400 font-black shadow-xs'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                              }`}
+                            >
+                              {sz.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Subtitle Alignment (Выравнивание подзаголовка) */}
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-600 block mb-1">
+                          Выравнивание подзаголовка:
+                        </span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { id: 'left', label: 'Слева' },
+                            { id: 'center', label: 'По центру' },
+                            { id: 'right', label: 'Справа' },
+                          ].map((align) => (
+                            <button
+                              key={align.id}
+                              type="button"
+                              onClick={() => update({ subtextAlign: align.id as any })}
+                              className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                (design.subtextAlign || design.textAlign || 'center') === align.id
+                                  ? 'bg-amber-300 text-slate-950 border-amber-400 shadow-xs font-black'
+                                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                              }`}
+                            >
+                              {align.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Quick Subtitle Presets */}
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 block mb-1">
+                          Варианты подзаголовка:
+                        </span>
+                        <div className="grid grid-cols-1 gap-1">
+                          {[
+                            'Свежая выпечка каждый день',
+                            'Эклеры и круассаны с 8:00',
+                            'Французские десерты и кофе',
+                          ].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => update({ subtext: preset })}
+                              className={`text-left px-2.5 py-1.5 rounded-lg text-[10px] font-medium border transition-colors cursor-pointer truncate ${
+                                design.subtext === preset
+                                  ? 'bg-amber-100 border-amber-300 text-amber-900 font-bold'
+                                  : 'bg-slate-50 border-slate-200 hover:bg-amber-50 text-slate-600'
+                              }`}
+                            >
+                              {preset}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => update({ subtext: 'Свежая выпечка каждый день', subtextSize: 14 })}
+                      className="w-full py-2.5 px-3 rounded-xl border-2 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/50 hover:bg-amber-50 text-amber-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <span>➕ Добавить подзаголовок (девиз)</span>
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -364,72 +675,168 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
               </div>
             )}
 
-            {/* Step 4: Text Color (8 colors) */}
+            {/* Step 4: Icon & Decor - Full custom positioning, resizing, moving across the sign */}
             {activeStep === 4 && (
-              <div className="space-y-3">
-                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
-                  Цвет текста (8 вариантов)
-                </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {SIGN_TEXT_COLORS.map((tc) => (
-                    <button
-                      key={tc.hex}
-                      type="button"
-                      onClick={() => update({ textColor: tc.hex })}
-                      className={`p-2.5 rounded-xl border-2 flex items-center gap-2 transition-all cursor-pointer ${
-                        design.textColor === tc.hex
-                          ? 'border-amber-500 ring-2 ring-amber-300 bg-amber-50'
-                          : 'border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div
-                        style={{ backgroundColor: tc.hex }}
-                        className="w-5 h-5 rounded-full border border-slate-300 shrink-0"
-                      />
-                      <span className="text-xs font-bold text-slate-800 truncate">
-                        {tc.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Step 5: Icon (20 icons, NO characters) */}
-            {activeStep === 5 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between mb-1">
+              <div className="space-y-3 animate-fadeIn">
+                <div className="flex items-center justify-between mb-0.5">
                   <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">
-                    Иконка (20 на выбор)
+                    Иконки на вывеске
                   </h4>
-                  <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                    Только выпечка и предметы
+                  <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                    Всего: {design.icons?.length || 0} шт
                   </span>
                 </div>
-                <div className="grid grid-cols-4 gap-2 max-h-64 overflow-y-auto p-1">
-                  {SIGN_ICONS.map((ic) => (
-                    <button
-                      key={ic.id}
-                      type="button"
-                      onClick={() => update({ icon: ic.id })}
-                      className={`p-2 rounded-xl border flex flex-col items-center justify-center transition-all cursor-pointer ${
-                        design.icon === ic.id
-                          ? 'border-amber-500 bg-amber-100 ring-2 ring-amber-300 scale-105'
-                          : 'border-slate-200 hover:bg-slate-50'
-                      }`}
-                      title={ic.name}
-                    >
-                      <img
-                        src={ic.filename}
-                        alt={ic.name}
-                        className="w-9 h-9 object-contain drop-shadow-xs"
-                      />
-                      <span className="text-[9px] font-bold text-slate-600 truncate mt-1 max-w-[50px]">
-                        {ic.name}
-                      </span>
-                    </button>
-                  ))}
+
+                {/* Helpful kid tip for dragging */}
+                <div className="bg-amber-50/80 border border-amber-200/80 rounded-xl p-2 flex items-center gap-2 text-[11px] font-bold text-amber-900">
+                  <span className="text-base shrink-0">👆</span>
+                  <span>Нажимай на иконку прямо на вывеске и перетаскивай куда угодно!</span>
                 </div>
+
+                {/* Selected Icon Controls */}
+                {selectedIconId && design.icons?.some((ic) => ic.id === selectedIconId) ? (
+                  <div className="bg-white border-2 border-amber-400 rounded-xl p-2.5 space-y-2.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-extrabold text-slate-800 uppercase tracking-wide">
+                        Выбранная иконка
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteIcon(selectedIconId)}
+                        className="text-[11px] text-rose-600 hover:text-rose-800 font-black hover:underline cursor-pointer"
+                        title="Удалить выбранную иконку"
+                      >
+                        Удалить ✕
+                      </button>
+                    </div>
+
+                    {/* Resizing current icon */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[11px] font-bold text-slate-600">Размер этой иконки:</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = design.icons?.find((ic) => ic.id === selectedIconId);
+                              if (curr) handleUpdateSelectedIcon({ size: Math.max(20, curr.size - 6) });
+                            }}
+                            className="w-5 h-5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                            title="Уменьшить"
+                          >
+                            -
+                          </button>
+                          <span className="text-[11px] font-black text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 min-w-10 text-center font-mono">
+                            {design.icons?.find((ic) => ic.id === selectedIconId)?.size || 48}px
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const curr = design.icons?.find((ic) => ic.id === selectedIconId);
+                              if (curr) handleUpdateSelectedIcon({ size: Math.min(80, curr.size + 6) });
+                            }}
+                            className="w-5 h-5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs flex items-center justify-center cursor-pointer shadow-xs active:scale-95"
+                            title="Увеличить"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-1">
+                        {[
+                          { sz: 28, label: 'Маленькая' },
+                          { sz: 48, label: 'Средняя' },
+                          { sz: 68, label: 'Большая' },
+                        ].map((s) => {
+                          const curr = design.icons?.find((ic) => ic.id === selectedIconId);
+                          return (
+                            <button
+                              key={s.sz}
+                              type="button"
+                              onClick={() => handleUpdateSelectedIcon({ size: s.sz })}
+                              className={`py-1 px-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                (curr?.size || 48) === s.sz
+                                  ? 'bg-amber-400 text-slate-950 border-amber-500 shadow-xs font-black'
+                                  : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {s.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Quick Move Buttons */}
+                    <div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                        Быстрое перемещение:
+                      </span>
+                      <div className="grid grid-cols-4 gap-1">
+                        {[
+                          { pos: { x: 18, y: 50 }, label: 'Слева', icon: '⬅️' },
+                          { pos: { x: 82, y: 50 }, label: 'Справа', icon: '➡️' },
+                          { pos: { x: 50, y: 20 }, label: 'Сверху', icon: '⬆️' },
+                          { pos: { x: 50, y: 80 }, label: 'Снизу', icon: '⬇️' },
+                        ].map((p) => (
+                          <button
+                            key={p.label}
+                            type="button"
+                            onClick={() => handleUpdateSelectedIcon(p.pos)}
+                            className="py-1 px-1 rounded-xl text-[10px] font-bold border border-slate-200 bg-slate-50 hover:bg-amber-100 text-slate-700 flex flex-col items-center gap-0.5 cursor-pointer active:scale-95 transition-all"
+                          >
+                            <span className="text-xs">{p.icon}</span>
+                            <span>{p.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center">
+                    Выбери картинку ниже, чтобы добавить её на вывеску!
+                  </div>
+                )}
+
+                {/* Add New Icon from Palette */}
+                <div>
+                  <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wide block mb-1">
+                    Добавить иконку на вывеску:
+                  </span>
+                  <div className="grid grid-cols-4 gap-1.5 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
+                    {SIGN_ICONS.map((ic) => (
+                      <button
+                        key={ic.id}
+                        type="button"
+                        onClick={() => handleAddIcon(ic.id)}
+                        className="h-13 rounded-xl border-2 border-slate-200 bg-white hover:border-amber-400 hover:bg-amber-50 flex items-center justify-center transition-all cursor-pointer p-1 active:scale-95 shadow-2xs"
+                        title="Нажми, чтобы добавить на вывеску"
+                      >
+                        <img
+                          src={ic.filename}
+                          alt={ic.name}
+                          className="w-9 h-9 object-contain drop-shadow-xs pointer-events-none"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Clear all icons */}
+                {design.icons && design.icons.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundEngine.playPop();
+                      update({ icons: [], icon: 'none' });
+                      setSelectedIconId(null);
+                    }}
+                    className="w-full py-1.5 px-3 rounded-xl border border-rose-200 bg-rose-50/50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                  >
+                    🗑️ Очистить все иконки
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -446,8 +853,8 @@ export const SignEditorView: React.FC<SignEditorViewProps> = ({
             </button>
             <button
               type="button"
-              disabled={activeStep >= 5}
-              onClick={() => setActiveStep((prev) => Math.min(5, prev + 1) as any)}
+              disabled={activeStep >= 4}
+              onClick={() => setActiveStep((prev) => Math.min(4, prev + 1) as any)}
               className="px-4 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 text-xs font-black disabled:opacity-40 shadow-xs"
             >
               Далее ➔

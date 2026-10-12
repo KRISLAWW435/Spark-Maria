@@ -70,6 +70,7 @@ interface WindowsLaptopSimulatorProps {
   onTestPoster?: (design: PosterDesign) => void;
   onTestStickers?: (design: StickersDesign) => void;
   activeOrder?: 1 | 2 | 3;
+  onOpenFullscreenEditor?: () => void;
 }
 
 export type AppId = 'mail' | 'portfolio' | 'settings' | 'book' | 'canvas';
@@ -226,6 +227,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   onTestPoster,
   onTestStickers,
   activeOrder = 1,
+  onOpenFullscreenEditor,
 }) => {
   const [selectedEmailId, setSelectedEmailId] = useState<string>(
     activeOrder === 2 ? 'marie_order_2' : activeOrder === 3 ? 'marie_order_3' : 'marie_order_1'
@@ -307,7 +309,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   // WINDOW SYSTEM STATE (All 5 apps as draggable, minimizable, maximizable windows)
   const [maxZIndex, setMaxZIndex] = useState<number>(100);
   const [activeAppId, setActiveAppId] = useState<AppId | null>(
-    hasObservedStreet ? 'canvas' : 'mail'
+    hasObservedStreet ? null : 'mail'
   );
 
   const [windows, setWindows] = useState<Record<AppId, WindowMeta>>(() => ({
@@ -315,10 +317,10 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
       id: 'canvas',
       title: 'Холст Дизайнера • Разработка вывески',
       icon: <Paintbrush className="w-4 h-4 text-pink-500" />,
-      isOpen: !!hasObservedStreet,
+      isOpen: false,
       isMinimized: false,
       isMaximized: false,
-      zIndex: hasObservedStreet ? 100 : 10,
+      zIndex: 10,
       initialPos: { x: 35, y: 15 },
       initialSize: { width: '88%', height: '84%' },
     },
@@ -326,10 +328,10 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
       id: 'mail',
       title: 'Почта • Входящие письма',
       icon: <Mail className="w-4 h-4 text-amber-500" />,
-      isOpen: true,
+      isOpen: !hasObservedStreet,
       isMinimized: false,
       isMaximized: false,
-      zIndex: hasObservedStreet ? 10 : 100,
+      zIndex: 100,
       initialPos: { x: 50, y: 25 },
       initialSize: { width: '82%', height: '80%' },
     },
@@ -463,6 +465,10 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
   const handleDockIconClick = (id: AppId) => {
     soundEngine.playOsClick();
     setIsStartMenuOpen(false);
+    if (id === 'canvas' && onOpenFullscreenEditor) {
+      onOpenFullscreenEditor();
+      return;
+    }
     const win = windows[id];
 
     if (!win.isOpen) {
@@ -503,12 +509,12 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
     }
   }, [isOpen, activeAppId, selectedEmailId, windows.mail.isOpen, windows.mail.isMinimized]);
 
-  // Bring canvas to front when opening laptop if user has observed street
+  // Bring canvas to front when opening laptop if user has observed street (only in window mode without onOpenFullscreenEditor)
   useEffect(() => {
-    if (isOpen && hasObservedStreet) {
+    if (isOpen && hasObservedStreet && !onOpenFullscreenEditor) {
       openApp('canvas');
     }
-  }, [isOpen, hasObservedStreet]);
+  }, [isOpen, hasObservedStreet, onOpenFullscreenEditor]);
 
   // Trigger boot sequence whenever laptop is opened
   useEffect(() => {
@@ -714,7 +720,14 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
             <div className="flex flex-col gap-4 sm:gap-5 z-10 w-28 sm:w-32">
               {/* Shortcut 1: Холст Дизайнера */}
               <button
-                onClick={() => openApp('canvas')}
+                onClick={() => {
+                  if (onOpenFullscreenEditor) {
+                    soundEngine.playClick();
+                    onOpenFullscreenEditor();
+                  } else {
+                    openApp('canvas');
+                  }
+                }}
                 className={`flex flex-col items-center p-2 rounded-2xl text-white text-center hover:bg-white/15 transition-all cursor-pointer group ${
                   hasObservedStreet ? 'ring-4 ring-pink-400 bg-pink-500/20 animate-pulse' : ''
                 } ${windows.canvas.isOpen && !windows.canvas.isMinimized ? 'bg-white/20 ring-2 ring-white/50' : ''}`}
@@ -810,6 +823,25 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                 </span>
               </button>
             </div>
+
+            {/* Spark Desktop Prompt when player returned from Marie */}
+            {hasObservedStreet && !windows.canvas.isOpen && (
+              <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-20 max-w-sm pointer-events-none animate-fadeIn select-none">
+                <div className="bg-slate-900/90 backdrop-blur-xl border-2 border-amber-400/80 p-3.5 sm:p-4 rounded-3xl shadow-[0_15px_35px_rgba(0,0,0,0.6)] flex items-center gap-3">
+                  <div className="w-12 h-12 shrink-0">
+                    <SparkCharacter state="active" size={48} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+                      <span>⚡ Спарк</span>
+                    </div>
+                    <div className="text-xs sm:text-sm font-black text-white mt-0.5 leading-snug drop-shadow-sm">
+                      Выбери приложение на рабочем столе — открой «Холст Дизайнера»! 🎨
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ALL 5 APPS OPEN AS INDEPENDENT WINDOWS */}
 
@@ -910,7 +942,7 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                           Спарк подсказывает
                         </div>
                         <div className="text-xs font-black text-slate-800 leading-tight">
-                          Нажми на письмо, чтобы прочитать.
+                          {hasObservedStreet ? 'Выбери приложение на рабочем столе — открой "Холст Дизайнера"' : 'Нажми на письмо, чтобы прочитать.'}
                         </div>
                       </div>
                     </div>
@@ -1853,8 +1885,14 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
               <div className="h-px bg-slate-300 my-1" />
               <div
                 onClick={() => {
-                  openApp('canvas');
-                  setIsContextMenuOpen(false);
+                  if (onOpenFullscreenEditor) {
+                    soundEngine.playClick();
+                    setIsContextMenuOpen(false);
+                    onOpenFullscreenEditor();
+                  } else {
+                    openApp('canvas');
+                    setIsContextMenuOpen(false);
+                  }
                 }}
                 className="px-4 py-2 hover:bg-[#91c9f7] cursor-pointer font-bold flex items-center gap-2"
               >
@@ -1917,8 +1955,14 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                 </span>
                 <button
                   onClick={() => {
-                    openApp('canvas');
-                    setIsStartMenuOpen(false);
+                    if (onOpenFullscreenEditor) {
+                      soundEngine.playClick();
+                      setIsStartMenuOpen(false);
+                      onOpenFullscreenEditor();
+                    } else {
+                      openApp('canvas');
+                      setIsStartMenuOpen(false);
+                    }
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/10 rounded-xl text-left transition-colors cursor-pointer"
                 >
@@ -1988,8 +2032,14 @@ export const WindowsLaptopSimulator: React.FC<WindowsLaptopSimulatorProps> = ({
                 <div className="grid grid-cols-2 gap-2.5">
                   <div
                     onClick={() => {
-                      openApp('canvas');
-                      setIsStartMenuOpen(false);
+                      if (onOpenFullscreenEditor) {
+                        soundEngine.playClick();
+                        setIsStartMenuOpen(false);
+                        onOpenFullscreenEditor();
+                      } else {
+                        openApp('canvas');
+                        setIsStartMenuOpen(false);
+                      }
                     }}
                     className="p-3 rounded-2xl bg-gradient-to-br from-pink-600 to-rose-700 cursor-pointer hover:scale-105 transition-all shadow-md flex flex-col justify-between h-24"
                   >

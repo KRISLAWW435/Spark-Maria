@@ -4,7 +4,7 @@ import { getStickerSrc } from '../constants/stickers';
 
 interface StickersRenderProps {
   design: StickersDesign;
-  zone?: 'windowL' | 'windowR' | 'door';
+  zone?: 'window' | 'door' | 'windowL' | 'windowR';
   scale?: number;
   className?: string;
   onStickerClick?: (sticker: StickerItem) => void;
@@ -66,7 +66,12 @@ export const StickersRender: React.FC<StickersRenderProps> = ({
   selectedStickerId,
 }) => {
   const stickers = zone
-    ? design.stickers.filter((s) => !s.targetZone || s.targetZone === zone)
+    ? design.stickers.filter((s) => {
+        if (!s.targetZone) return true;
+        if (s.targetZone === zone) return true;
+        if (zone === 'window' && (s.targetZone === 'windowL' || s.targetZone === 'windowR')) return true;
+        return false;
+      })
     : design.stickers;
 
   return (

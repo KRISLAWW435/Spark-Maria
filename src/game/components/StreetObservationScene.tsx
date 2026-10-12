@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SignDesign, PosterDesign, StickersDesign } from '../types';
+import { SignDesign, PosterDesign, StickersDesign, ZONES } from '../types';
 import { BakeryFacadeView } from './BakeryFacadeView';
 import { SparkSprite } from './SparkSprite';
 import { soundEngine } from '../engine/SoundEngine';
@@ -20,7 +20,7 @@ interface ProblemDetail {
   problemTitle: string;
   explanation: string;
   emoji: string;
-  positionClass: string;
+  zoneKey: 'sign' | 'poster' | 'window';
 }
 
 const PROBLEMS: ProblemDetail[] = [
@@ -30,7 +30,7 @@ const PROBLEMS: ProblemDetail[] = [
     problemTitle: 'Нет вывески!',
     explanation: 'Над дверью совсем пусто. Люди идут по улице и не понимают, что здесь пекарня!',
     emoji: '🏷️',
-    positionClass: 'top-[18%] left-[48%] -translate-x-1/2 -translate-y-1/2',
+    zoneKey: 'sign',
   },
   {
     id: 'poster',
@@ -38,7 +38,7 @@ const PROBLEMS: ProblemDetail[] = [
     problemTitle: 'Нет афиши!',
     explanation: 'На стене пусто! Прохожие не знают, какие вкусные эклеры и выпечку готовят внутри.',
     emoji: '📜',
-    positionClass: 'top-[42%] left-[78%] -translate-x-1/2 -translate-y-1/2',
+    zoneKey: 'poster',
   },
   {
     id: 'windows',
@@ -46,9 +46,22 @@ const PROBLEMS: ProblemDetail[] = [
     problemTitle: 'Окна пустые!',
     explanation: 'Витрина без картинок и наклеек. Не хватает уюта и аппетитного настроения!',
     emoji: '🪟',
-    positionClass: 'top-[46%] left-[21%] -translate-x-1/2 -translate-y-1/2',
+    zoneKey: 'window',
   },
 ];
+
+const getZoneCenter = (zoneKey: 'sign' | 'poster' | 'window') => {
+  const zone = ZONES[zoneKey];
+  if (zoneKey === 'poster') {
+    // Lift poster button higher up inside the poster frame
+    const top = `calc(${zone.top} + (${zone.height} * 0.28))`;
+    const left = `calc(${zone.left} + (${zone.width} / 2))`;
+    return { top, left };
+  }
+  const top = `calc(${zone.top} + (${zone.height} / 2))`;
+  const left = `calc(${zone.left} + (${zone.width} / 2))`;
+  return { top, left };
+};
 
 export const StreetObservationScene: React.FC<StreetObservationSceneProps> = ({
   signDesign,
@@ -69,80 +82,114 @@ export const StreetObservationScene: React.FC<StreetObservationSceneProps> = ({
     setActiveCardProblem(problem);
   };
 
+  const handleInspectDoor = () => {
+    soundEngine.playPop();
+    setActiveCardProblem({
+      id: 'windows',
+      label: 'Дверь',
+      problemTitle: 'Дверь в порядке!',
+      explanation: 'Входная дверь деревянная и чистая. Но обрати внимание: над дверью совсем нет вывески, рядом на стене нет афиши, а в витрине окна пусто!',
+      emoji: '🚪',
+      zoneKey: 'window',
+    });
+  };
+
   return (
-    <div className="relative w-full h-screen overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none font-sans bg-slate-950">
-      {/* Facade View Background */}
+    <div className="relative w-full h-full min-h-screen overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none font-sans bg-slate-950">
+      {/* Facade View Background with interactive zones in Sherlock mode */}
       <div className="absolute inset-0 z-0">
         <BakeryFacadeView
-          signDesign={signDesign}
-          posterDesign={posterDesign}
-          stickersDesign={stickersDesign}
-        />
+          signDesign={null}
+          posterDesign={null}
+          stickersDesign={null}
+          isSherlockMode={true}
+          activeZones={['sign', 'poster', 'window', 'door']}
+          onZoneClick={(zone) => {
+            if (zone === 'sign') {
+              const p = PROBLEMS.find((item) => item.id === 'sign');
+              if (p) handleInspect(p);
+            } else if (zone === 'poster') {
+              const p = PROBLEMS.find((item) => item.id === 'poster');
+              if (p) handleInspect(p);
+            } else if (zone === 'window' || zone === 'windowR') {
+              const p = PROBLEMS.find((item) => item.id === 'windows');
+              if (p) handleInspect(p);
+            } else if (zone === 'door') {
+              handleInspectDoor();
+            }
+          }}
+        >
+          {/* 3 LARGE BUTTONS WITH MAGNIFYING GLASS (Strictly bound to Facade 2752x1536 aspect container) */}
+          <div className="absolute inset-0 z-20 pointer-events-none">
+            {PROBLEMS.map((problem) => {
+              const isFound = foundIds.includes(problem.id);
+              const center = getZoneCenter(problem.zoneKey);
+
+              return (
+                <div
+                  key={problem.id}
+                  style={{
+                    top: center.top,
+                    left: center.left,
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                  className="absolute pointer-events-auto"
+                >
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={() => handleInspect(problem)}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-full font-black text-sm sm:text-base shadow-2xl border-2 transition-all cursor-pointer ${
+                      isFound
+                        ? 'bg-emerald-600 text-white border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)]'
+                        : 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-white shadow-[0_0_25px_rgba(245,158,11,0.6)] animate-bounce'
+                    }`}
+                    title={`Нажми, чтобы осмотреть: ${problem.label}`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isFound ? 'bg-emerald-700 text-white' : 'bg-white text-amber-600 shadow-sm'}`}>
+                      {isFound ? (
+                        <CheckCircle2 className="w-5 h-5" />
+                      ) : (
+                        <Search className="w-5 h-5 stroke-[2.5]" />
+                      )}
+                    </div>
+                    <span>{problem.label}</span>
+                    {isFound && <span className="text-xs opacity-90">✓</span>}
+                  </motion.button>
+                </div>
+              );
+            })}
+          </div>
+        </BakeryFacadeView>
       </div>
 
-      {/* Top Banner: Mode & Progress */}
-      <div className="relative z-30 max-w-xl mx-auto bg-slate-900/90 backdrop-blur-md px-6 py-3 rounded-full border border-amber-400/60 shadow-2xl text-center mt-12 sm:mt-14 text-white">
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-xl">🕵️‍♂️</span>
-          <h2 className="text-sm sm:text-base font-black text-amber-300 tracking-wide uppercase">
+      {/* Top-Left Floating Badge: Mode & Progress (Compact capsule in top-left, does NOT cover sign or Studio pill) */}
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-40 bg-slate-900/90 backdrop-blur-md px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-amber-400/70 shadow-2xl text-white select-none pointer-events-auto flex items-center gap-3 max-w-sm sm:max-w-md">
+        <span className="text-2xl sm:text-3xl shrink-0">🕵️‍♂️</span>
+        <div className="text-left">
+          <h2 className="text-xs sm:text-sm font-black text-amber-300 tracking-wide uppercase leading-tight">
             Режим «Шерлок» • Найди 3 проблемы на фасаде
           </h2>
+          <p className="text-[11px] sm:text-xs text-slate-300 font-semibold leading-tight mt-1">
+            Найдено проблем: <strong className="text-amber-400 font-black">{foundIds.length}</strong> из 3
+          </p>
         </div>
-        <p className="text-xs text-slate-300 mt-1 font-semibold">
-          Найдено проблем: <strong className="text-amber-400">{foundIds.length}</strong> из 3
-        </p>
       </div>
 
-      {/* 3 LARGE BUTTONS WITH MAGNIFYING GLASS ON THE FACADE */}
-      <div className="absolute inset-0 z-20 pointer-events-none">
-        {PROBLEMS.map((problem) => {
-          const isFound = foundIds.includes(problem.id);
-
-          return (
-            <div
-              key={problem.id}
-              className={`absolute pointer-events-auto ${problem.positionClass}`}
-            >
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.94 }}
-                onClick={() => handleInspect(problem)}
-                className={`flex items-center gap-2 px-5 py-3 rounded-full font-black text-sm sm:text-base shadow-2xl border-2 transition-all cursor-pointer ${
-                  isFound
-                    ? 'bg-emerald-600 text-white border-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.5)]'
-                    : 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-white shadow-[0_0_25px_rgba(245,158,11,0.6)] animate-bounce'
-                }`}
-                title={`Нажми, чтобы осмотреть: ${problem.label}`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isFound ? 'bg-emerald-700 text-white' : 'bg-white text-amber-600 shadow-sm'}`}>
-                  {isFound ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                  ) : (
-                    <Search className="w-5 h-5 stroke-[2.5]" />
-                  )}
-                </div>
-                <span>{problem.label}</span>
-                {isFound && <span className="text-xs opacity-90">✓</span>}
-              </motion.button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* BOTTOM SPARK & DIALOGUE */}
-      <div className="relative z-30 flex items-end justify-between max-w-4xl mx-auto w-full mt-auto mb-4 pointer-events-none">
+      {/* BOTTOM SPARK & DIALOGUE (Compact & unobtrusive) */}
+      <div className="relative z-30 flex items-end justify-between max-w-3xl mx-auto w-full mt-auto mb-2 sm:mb-4 pointer-events-none px-2">
         {/* Spark Sprite */}
         <div className="relative shrink-0 pointer-events-auto">
-          <div className="absolute -inset-4 rounded-full bg-gradient-to-tr from-pink-400/30 via-purple-400/30 to-sky-400/30 blur-xl pointer-events-none" />
-          <div className="h-40 sm:h-52 md:h-60 w-auto drop-shadow-2xl">
+          <div className="absolute -inset-3 rounded-full bg-gradient-to-tr from-pink-400/25 via-purple-400/25 to-sky-400/25 blur-lg pointer-events-none" />
+          <div className="h-32 sm:h-40 md:h-44 w-auto drop-shadow-2xl">
             <SparkSprite emotion={allFound ? 'excited' : 'thinking'} size="100%" className="h-full w-auto" />
           </div>
         </div>
 
         {/* Dialogue Box */}
-        <div className="flex-1 ml-4 pointer-events-auto">
-          <div className="bg-white/95 border-2 border-amber-400 p-5 rounded-3xl shadow-2xl backdrop-blur-md text-slate-900">
+        <div className="flex-1 ml-3 sm:ml-4 pointer-events-auto">
+          <div className="bg-white/95 border-2 border-amber-400 p-3.5 sm:p-4.5 rounded-2xl sm:rounded-3xl shadow-2xl backdrop-blur-md text-slate-900">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-black uppercase text-amber-600 tracking-wider">
                 Спарк
@@ -150,7 +197,7 @@ export const StreetObservationScene: React.FC<StreetObservationSceneProps> = ({
               {allFound && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
             </div>
 
-            <p className="text-sm sm:text-base font-extrabold text-slate-900">
+            <p className="text-xs sm:text-sm md:text-base font-extrabold text-slate-900 leading-snug">
               {allFound
                 ? 'Всё ясно! Все 3 проблемы найдены. Возвращаемся в студию делать вывеску!'
                 : 'Посмотри на фасад пекарни. Нажимай на большие кнопки с лупой, чтобы найти проблемы!'}

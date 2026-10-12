@@ -10,6 +10,7 @@ interface CanvasEditorProps {
   onTestDesign: (design: SignDesign) => void;
   versionNumber?: number;
   isWindowMode?: boolean;
+  onClose?: () => void;
   orderNumber?: 1 | 2 | 3;
   posterDesign?: PosterDesign | null;
   stickersDesign?: StickersDesign | null;
@@ -22,6 +23,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
   onTestDesign,
   versionNumber = 1,
   isWindowMode = false,
+  onClose,
   orderNumber = 1,
   posterDesign,
   stickersDesign,
@@ -34,6 +36,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         initialDesign={posterDesign || defaultPosterDesign}
         onTestDesign={(p) => (onTestPoster ? onTestPoster(p) : onTestDesign(initialDesign))}
         isWindowMode={isWindowMode}
+        onClose={onClose}
       />
     );
   }
@@ -44,6 +47,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
         initialDesign={stickersDesign || defaultStickersDesign}
         onTestDesign={(s) => (onTestStickers ? onTestStickers(s) : onTestDesign(initialDesign))}
         isWindowMode={isWindowMode}
+        onClose={onClose}
       />
     );
   }
@@ -54,6 +58,7 @@ export const CanvasEditor: React.FC<CanvasEditorProps> = ({
       onTestDesign={onTestDesign}
       versionNumber={versionNumber}
       isWindowMode={isWindowMode}
+      onClose={onClose}
     />
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   GameScene,
   PlayerProgress,
@@ -26,11 +26,15 @@ import { CanvasEditor } from './game/components/CanvasEditor';
 import { StreetTestScene } from './game/components/StreetTestScene';
 import { TestResultsScene } from './game/components/TestResultsScene';
 import { PortfolioScene } from './game/components/PortfolioScene';
+import { TransitionScreen } from './game/components/TransitionScreen';
 import { VideoTransition } from './game/components/VideoTransition';
 import { assetPreloader } from './game/engine/AssetPreloader';
+import { FullscreenManager } from './game/engine/FullscreenManager';
+import { WindowsLaptopSimulator } from './game/components/WindowsLaptopSimulator';
 import { Smartphone, RotateCw } from 'lucide-react';
 
 export default function App() {
+  const studioRef = useRef<{ openLaptop: () => void }>(null);
   const [progress, setProgress] = useState<PlayerProgress>(() => SaveEngine.loadProgress());
   const [currentScene, setCurrentScene] = useState<GameScene>('studio');
 
@@ -61,6 +65,15 @@ export default function App() {
     return Boolean(progress.completedModules?.includes('bakery_marie'));
   });
 
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(() => FullscreenManager.isFullscreen());
+
+  useEffect(() => {
+    return FullscreenManager.addFullscreenChangeListener((full) => {
+      setIsFullscreen(full);
+    });
+  }, []);
+
   // Check portrait orientation on mobile handheld touch devices only
   const [isPortrait, setIsPortrait] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -79,15 +92,37 @@ export default function App() {
     // Preload video and scene background images in background
     assetPreloader.preloadAll();
 
+    // Automatically trigger fullscreen mode
+    const tryEnterFullscreen = async () => {
+      if (!FullscreenManager.isFullscreen()) {
+        await FullscreenManager.requestFullscreen();
+      }
+    };
+
+    // Attempt immediately (works if top window or allowed; if blocked, activates virtual fullscreen)
+    tryEnterFullscreen();
+
+    // Trigger automatically on the player's first interaction:
+    const handleFirstUserInteraction = () => {
+      tryEnterFullscreen();
+    };
+
+    window.addEventListener('click', handleFirstUserInteraction);
+    window.addEventListener('touchstart', handleFirstUserInteraction);
+    window.addEventListener('keydown', handleFirstUserInteraction);
+
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
+      window.removeEventListener('click', handleFirstUserInteraction);
+      window.removeEventListener('touchstart', handleFirstUserInteraction);
+      window.removeEventListener('keydown', handleFirstUserInteraction);
     };
   }, []);
 
-  // Video Transition Overlay state
-  const [showVideoTransition, setShowVideoTransition] = useState<boolean>(false);
-  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+  // Transitions state
+  const [showDriveVideo, setShowDriveVideo] = useState<boolean>(false);
+  const [showReturnTransition, setShowReturnTransition] = useState<boolean>(false);
 
   // Auto-save player progress whenever it changes
   useEffect(() => {
@@ -96,23 +131,11 @@ export default function App() {
 
   // Order Flow: Trip to Marie (plays Drive video transition)
   const handleStartMarieLevel = (orderNumber: 1 | 2 | 3 = 1) => {
-    if (isTransitioning) return; // Prevent double trigger
-    setIsTransitioning(true);
+    FullscreenManager.requestFullscreen().catch(() => {});
     setActiveOrder(orderNumber);
-    setShowVideoTransition(true);
+    setShowDriveVideo(true);
   };
 
-  // Called as soon as the screen is 100% covered by the video (at ~300ms)
-  // Switches the scene to intro_bakery underneath so all images decode while video plays
-  const handleVideoTransitionCovered = () => {
-    setCurrentScene('intro_bakery');
-  };
-
-  // Called after the fadeout finishes (bakery is already revealed smoothly)
-  const handleVideoTransitionComplete = () => {
-    setShowVideoTransition(false);
-    setIsTransitioning(false);
-  };
 
   // Order 1: Sign Test
   const handleTestDesign = (designToTest: SignDesign) => {
@@ -257,6 +280,10 @@ export default function App() {
     setCurrentScene('studio');
   };
 
+  const handleCloseEditor = () => {
+    setCurrentScene('studio');
+  };
+
   const handleKeepAndFinish = () => {
     if (!currentTestResult) return;
 
@@ -385,7 +412,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
+    <div
+      className={`min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950 ${
+        isFullscreen ? 'fixed inset-0 z-40 w-full h-full overflow-hidden' : ''
+      }`}
+    >
       {/* Top Header Navigation */}
       <HeaderNav
         progress={progress}
@@ -425,6 +456,7 @@ export default function App() {
       <main className="flex-1 relative flex flex-col">
         {currentScene === 'studio' && (
           <SparkStudioScene
+            ref={studioRef}
             key={studioResetKey}
             progress={progress}
             onStartMarieLevel={handleStartMarieLevel}
@@ -438,6 +470,7 @@ export default function App() {
             onTestPoster={handleTestPoster}
             onTestStickers={handleTestStickers}
             activeOrder={activeOrder}
+            onOpenFullscreenEditor={() => setCurrentScene('canvas_editor')}
           />
         )}
 
@@ -455,12 +488,13 @@ export default function App() {
         {currentScene === 'street_observation' && (
           <StreetObservationScene
             orderNumber={activeOrder}
-            signDesign={currentDesign}
-            posterDesign={posterDesign}
-            stickersDesign={stickersDesign}
+            signDesign={null}
+            posterDesign={null}
+            stickersDesign={null}
             onComplete={() => {
               setHasObservedStreet(true);
-              setCurrentScene('studio');
+              // Trigger 2-second car transition to studio/laptop
+              setShowReturnTransition(true);
             }}
           />
         )}
@@ -471,6 +505,8 @@ export default function App() {
             onTestDesign={handleTestDesign}
             versionNumber={versionCounter}
             orderNumber={activeOrder}
+            isWindowMode={false}
+            onClose={handleCloseEditor}
             posterDesign={posterDesign}
             stickersDesign={stickersDesign}
             onTestPoster={handleTestPoster}
@@ -502,11 +538,30 @@ export default function App() {
           />
         )}
 
-        {/* Fullscreen Video Transition: Drive to Client */}
-        {showVideoTransition && (
+        {/* Fullscreen Video Transition: Drive to Marie */}
+        {showDriveVideo && (
           <VideoTransition
-            onCovered={handleVideoTransitionCovered}
-            onComplete={handleVideoTransitionComplete}
+            src="/assets/avatars/videos/transition-drive-to-client.webm"
+            onCovered={() => {
+              setCurrentScene('intro_bakery');
+            }}
+            onComplete={() => {
+              setShowDriveVideo(false);
+            }}
+          />
+        )}
+
+        {/* Fullscreen Transition Screen: Return to Studio (Car Animation) */}
+        {showReturnTransition && (
+          <TransitionScreen
+            onComplete={() => {
+              setShowReturnTransition(false);
+              setCurrentScene('studio');
+              // Open laptop after transition
+              setTimeout(() => {
+                studioRef.current?.openLaptop();
+              }, 400);
+            }}
           />
         )}
       </main>

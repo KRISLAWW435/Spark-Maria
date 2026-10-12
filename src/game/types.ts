@@ -4,6 +4,8 @@ export type GameScene =
   | 'street_observation'
   | 'brief'
   | 'canvas_editor'
+  | 'fullscreen_editor'
+  | 'laptop_simulator'
   | 'street_test'
   | 'test_results'
   | 'portfolio'
@@ -67,12 +69,24 @@ export type FontStyle = 'sweet' | 'handwritten' | 'bold' | 'technical' | 'playfu
 
 export type ShapeType = 'rectangle' | 'rounded' | 'oval' | 'badge' | 'banner';
 
+export interface SignIconItem {
+  id: string;
+  icon: string; // 'icon1'..'icon24'
+  x: number; // percentage (0 to 100) inside sign layout
+  y: number; // percentage (0 to 100) inside sign layout
+  size: number; // size in px (e.g. 24, 36, 48, 64)
+}
+
 export interface SignDesign {
   background: string;
   text: string;
   font: string;
   textColor: string;
-  icon: string; // icon1.webp … icon22.webp
+  icon: string; // primary icon (backward-compatible)
+  icons?: SignIconItem[]; // freeform positioned icons on sign layout
+  textAlign?: 'left' | 'center' | 'right';
+  iconPosition?: 'left' | 'right' | 'top' | 'bottom';
+  extraIconsCount?: number; // 0 to 4
   // backward-compatible fields:
   fontSize: number; // 12 - 48
   fontStyle: FontStyle;
@@ -85,6 +99,8 @@ export interface SignDesign {
   posX: number; // offset percent from center
   posY: number; // offset percent
   subtext?: string;
+  subtextSize?: number;
+  subtextAlign?: 'left' | 'center' | 'right';
 }
 
 export interface PosterDesign {
@@ -103,7 +119,7 @@ export interface StickerItem {
   color: string;
   text: string;
   position: { x: number; y: number }; // % inside zone
-  targetZone?: 'windowL' | 'windowR' | 'door';
+  targetZone?: 'window' | 'door' | 'windowL' | 'windowR';
 }
 
 export interface StickersDesign {
@@ -120,11 +136,10 @@ export interface MariaOrders {
 }
 
 export const ZONES = {
-  sign:    { top: '5%',  left: '15%', width: '70%', height: '15%' },
-  poster:  { top: '30%', left: '28%', width: '15%', height: '35%' },
-  windowL: { top: '35%', left: '5%',  width: '25%', height: '40%' },
-  windowR: { top: '35%', left: '70%', width: '25%', height: '40%' },
-  door:    { top: '30%', left: '32%', width: '8%',  height: '55%' },
+  sign:    { top: '3.2%', left: '8.0%', width: '84.0%', height: '21.0%' },
+  door:    { top: '31.8%', left: '12.9%', width: '10.8%', height: '33.7%' },
+  poster:  { top: '33.1%', left: '29.3%', width: '12.3%', height: '30.4%' },
+  window:  { top: '26.6%', left: '45.3%', width: '44.3%', height: '41.1%' },
 };
 
 export interface VisitorReaction {

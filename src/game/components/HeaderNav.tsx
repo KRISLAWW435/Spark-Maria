@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { PlayerProgress } from '../types';
 import { SaveEngine } from '../engine/SaveEngine';
 import { soundEngine } from '../engine/SoundEngine';
-import { Download, Upload, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { FullscreenManager } from '../engine/FullscreenManager';
+import { Download, Upload, RefreshCw, CheckCircle2, Maximize, Minimize, ExternalLink } from 'lucide-react';
 
 interface HeaderNavProps {
   progress: PlayerProgress;
@@ -20,6 +21,16 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(() => FullscreenManager.isFullscreen());
+  const [isVirtual, setIsVirtual] = useState(() => FullscreenManager.isVirtualFullscreen());
+  const [isInIframe, setIsInIframe] = useState(() => FullscreenManager.isInIframe());
+
+  useEffect(() => {
+    return FullscreenManager.addFullscreenChangeListener((full, virt) => {
+      setIsFullscreen(full);
+      setIsVirtual(virt);
+    });
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -89,6 +100,33 @@ export const HeaderNav: React.FC<HeaderNavProps> = ({
           >
             <Upload className="w-3.5 h-3.5" />
           </button>
+
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={() => {
+              soundEngine.playPop();
+              FullscreenManager.toggleFullscreen();
+            }}
+            className={`p-1 rounded-full transition-colors cursor-pointer ${
+              isFullscreen ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' : 'hover:bg-slate-100 text-slate-600'
+            }`}
+            title={isFullscreen ? 'Выйти из полноэкранного режима' : 'Во весь экран'}
+          >
+            {isFullscreen ? <Minimize className="w-3.5 h-3.5" /> : <Maximize className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* Standalone Tab Button (if inside iframe preview) */}
+          {isInIframe && (
+            <a
+              href={typeof window !== 'undefined' ? window.location.href : '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1 rounded-full hover:bg-slate-100 text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer"
+              title="Открыть игру в отдельной вкладке браузера (для аппаратного F11 полноэкранного режима)"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
 
           {/* Reset Progress Button - Opens In-App Modal */}
           <button

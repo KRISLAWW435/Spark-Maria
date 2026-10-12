@@ -19,12 +19,14 @@ import {
   HelpCircle,
   Undo2,
   Redo2,
+  X,
 } from 'lucide-react';
 
 interface StickersEditorViewProps {
   initialDesign: StickersDesign;
   onTestDesign: (design: StickersDesign) => void;
   isWindowMode?: boolean;
+  onClose?: () => void;
 }
 
 export const STICKER_SHAPES: Array<{
@@ -52,6 +54,7 @@ export const StickersEditorView: React.FC<StickersEditorViewProps> = ({
   initialDesign,
   onTestDesign,
   isWindowMode = true,
+  onClose,
 }) => {
   const [stickers, setStickers] = useState<StickerItem[]>(
     initialDesign.stickers && initialDesign.stickers.length > 0
@@ -148,7 +151,7 @@ export const StickersEditorView: React.FC<StickersEditorViewProps> = ({
   const feedback = CompositionAssistant.evaluateStickers(stickers);
 
   return (
-    <div className={`w-full ${isWindowMode ? 'h-full' : 'h-screen'} bg-[#F7F9FC] text-slate-800 flex flex-col justify-between overflow-hidden select-none font-sans`}>
+    <div className={`${onClose ? 'fixed inset-0 z-50 w-screen h-screen' : `w-full ${isWindowMode ? 'h-full' : 'h-screen'}`} bg-[#F7F9FC] text-slate-800 flex flex-col justify-between overflow-hidden select-none font-sans`}>
       {/* Top Header */}
       <div className="bg-white border-b-2 border-slate-200 px-4 py-2 flex items-center justify-between z-20 shrink-0">
         <div className="flex items-center gap-2">
@@ -191,6 +194,17 @@ export const StickersEditorView: React.FC<StickersEditorViewProps> = ({
           >
             <Rocket className="w-3.5 h-3.5" /> Проверить на улице ➔
           </button>
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shadow-xs ml-1"
+              title="Закрыть редактор"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 

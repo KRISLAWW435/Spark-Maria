@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import {
@@ -133,9 +133,13 @@ interface SparkStudioSceneProps {
   onTestPoster?: (design: PosterDesign) => void;
   onTestStickers?: (design: StickersDesign) => void;
   activeOrder?: 1 | 2 | 3;
+  onOpenFullscreenEditor?: () => void;
 }
 
-export const SparkStudioScene: React.FC<SparkStudioSceneProps> = ({
+export const SparkStudioScene = React.forwardRef<
+  { openLaptop: () => void },
+  SparkStudioSceneProps
+>(({
   progress,
   onStartMarieLevel,
   onOpenPortfolio,
@@ -148,7 +152,11 @@ export const SparkStudioScene: React.FC<SparkStudioSceneProps> = ({
   onTestPoster,
   onTestStickers,
   activeOrder = 1,
-}) => {
+  onOpenFullscreenEditor,
+}, ref) => {
+  useImperativeHandle(ref, () => ({
+    openLaptop: () => setIsLaptopOpen(true),
+  }));
   // Load studio data from localStorage
   const [studio, setStudio] = useState<StudioData>(() => {
     try {
@@ -1377,7 +1385,8 @@ export const SparkStudioScene: React.FC<SparkStudioSceneProps> = ({
         onTestPoster={onTestPoster}
         onTestStickers={onTestStickers}
         activeOrder={activeOrder}
+        onOpenFullscreenEditor={onOpenFullscreenEditor}
       />
     </div>
   );
-};
+});
